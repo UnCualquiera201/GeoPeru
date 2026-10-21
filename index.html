@@ -286,7 +286,7 @@ const mapa = new maplibregl.Map({
 });
 
 // GeoVista integrado con MapillaryJS. Sustituye el texto de abajo por tu Client Access Token.
-const MAPILLARY_ACCESS_TOKEN = "MLY|28510085981952500|b5a5641c00ee26ab74c3744bb1e82a1e";
+const MAPILLARY_ACCESS_TOKEN = "PEGA_AQUI_TU_TOKEN_DE_MAPILLARY";
 let visorMapillary = null;
 let seleccionGeoVistaActiva = false;
 let marcadorGeoVista = null;
@@ -337,14 +337,14 @@ async function buscarImagenMapillary(lng, lat) {
   if (!MAPILLARY_ACCESS_TOKEN || MAPILLARY_ACCESS_TOKEN === "PEGA_AQUI_TU_TOKEN_DE_MAPILLARY") {
     throw new Error("Falta configurar el token de Mapillary en la constante MAPILLARY_ACCESS_TOKEN del index.html.");
   }
-  // Consultamos un cuadro de aproximadamente 1 km alrededor del punto y elegimos la imagen más cercana.
-  const deltaLng = 0.006;
-  const deltaLat = 0.006;
+  // Consultamos un área pequeña alrededor del punto para evitar solicitudes demasiado grandes.
+  const deltaLng = 0.001;
+  const deltaLat = 0.001;
   const url = new URL("https://graph.mapillary.com/images");
   url.searchParams.set("access_token", MAPILLARY_ACCESS_TOKEN);
-  url.searchParams.set("fields", "id,geometry,computed_compass_angle,captured_at,is_pano");
+  url.searchParams.set("fields", "id,geometry");
   url.searchParams.set("bbox", [lng-deltaLng,lat-deltaLat,lng+deltaLng,lat+deltaLat].join(","));
-  url.searchParams.set("limit", "100");
+  url.searchParams.set("limit", "10");
   const respuesta = await fetch(url.toString());
   const datos = await respuesta.json().catch(() => ({}));
   if (!respuesta.ok || datos.error) {
@@ -1490,3 +1490,4 @@ onAuthStateChanged(authCuenta,user=>{
 
 </body>
 </html>
+
