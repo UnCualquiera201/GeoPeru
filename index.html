@@ -1567,23 +1567,26 @@ dibujarAlimentadores();
 
 window.addEventListener("resize",()=>{mapa.resize();});
   
-// ELEGIR PUNTO PARA UNA PROPUESTA
+
+ // ELEGIR PUNTO PARA UNA PROPUESTA
 let seleccionandoPuntoPropuesta = false;
 let latitudPropuesta = null;
 let longitudPropuesta = null;
 
 function conectarBotonPunto() {
   const boton = document.getElementById("elegirPuntoUbicacion");
+  const formulario = document.getElementById("proponerUbicacion");
   const texto = document.getElementById("coordenadasUbicacion");
 
-  if (!boton || !texto) {
-    console.error("No se encontró el botón o el texto de coordenadas.");
+  if (!boton || !formulario || !texto) {
+    console.error("No se encontraron los elementos para elegir el punto.");
     return;
   }
 
   boton.addEventListener("click", function () {
     seleccionandoPuntoPropuesta = true;
-    texto.textContent = "Ahora haz clic en un punto del mapa.";
+    texto.textContent = "Haz clic en el lugar que deseas marcar en el mapa.";
+    formulario.hidden = true;
   });
 }
 
@@ -1600,14 +1603,19 @@ mapa.on("click", function (evento) {
   longitudPropuesta = evento.lngLat.lng;
   seleccionandoPuntoPropuesta = false;
 
+  const formulario = document.getElementById("proponerUbicacion");
   const texto = document.getElementById("coordenadasUbicacion");
 
-  if (texto) {
-    texto.textContent =
-      "Punto seleccionado: " +
-      latitudPropuesta.toFixed(6) + ", " +
-      longitudPropuesta.toFixed(6);
-  }
+  texto.textContent =
+    "Punto seleccionado: " +
+    latitudPropuesta.toFixed(6) + ", " +
+    longitudPropuesta.toFixed(6);
+
+  formulario.hidden = false;
+  formulario.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 });
 
 console.log("Selección de puntos preparada.");
