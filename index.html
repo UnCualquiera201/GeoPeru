@@ -1723,6 +1723,56 @@ async function cargarUsuariosAdmin() {
 onAuthStateChanged(authCuenta,user=>{
   cargarPerfil(user).catch(error=>console.error("Error cargando perfil",error));
 });
+  // GUARDAR PROPUESTAS DE UBICACIONES
+const formularioPropuesta = document.getElementById("formProponerUbicacion");
+
+if (formularioPropuesta) {
+  formularioPropuesta.addEventListener("submit", async function (evento) {
+    evento.preventDefault();
+
+    const estado = document.getElementById("estadoPropuestaUbicacion");
+    const boton = document.getElementById("enviarPropuestaUbicacion");
+    const usuario = authCuenta.currentUser;
+
+    if (!usuario) {
+      estado.textContent = "Inicia sesión para enviar una propuesta.";
+      return;
+    }
+
+    const nombre = document.getElementById("nombreUbicacion").value.trim();
+    const categoria = document.getElementById("categoriaUbicacion").value;
+    const emoji = document.getElementById("emojiUbicacion").value;
+    const descripcion = document.getElementById("descripcionUbicacion").value.trim();
+
+    if (!nombre || !categoria || !emoji || !descripcion) {
+      estado.textContent = "Completa todos los campos.";
+      return;
+    }
+
+    boton.disabled = true;
+    estado.textContent = "Enviando propuesta...";
+
+    try {
+      await addDoc(collection(dbCuenta, "propuestasUbicacion"), {
+        nombre: nombre,
+        categoria: categoria,
+        emoji: emoji,
+        descripcion: descripcion,
+        usuarioId: usuario.uid,
+        estado: "pendiente",
+        creadaEn: serverTimestamp()
+      });
+
+      estado.textContent = "¡Propuesta enviada! Quedará pendiente de aprobación.";
+      formularioPropuesta.reset();
+    } catch (error) {
+      console.error("Error al guardar la propuesta:", error);
+      estado.textContent = "No se pudo guardar. Revisa las reglas de Firestore.";
+    } finally {
+      boton.disabled = false;
+    }
+  });
+}
 </script>
 
 <!-- BOTÓN PARA ABRIR EL FORMULARIO -->
