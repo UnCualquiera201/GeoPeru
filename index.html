@@ -1844,8 +1844,8 @@ if (
         categoria: document.getElementById("categoriaUbicacion").value,
         emoji: document.getElementById("emojiUbicacion").value,
         descripcion: document.getElementById("descripcionUbicacion").value.trim(),
-        latitud: window.latitudPropuesta,
-        longitud: window.longitudPropuesta,
+        latitud: Number(latitud),
+        longitud: Number(longitud),
         usuarioId: usuario.uid,
         estado: "pendiente",
         creadaEn: serverTimestamp()
