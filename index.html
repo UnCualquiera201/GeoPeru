@@ -139,7 +139,24 @@ button.rojo{background:#b83232}
   font-size: 16px;
   cursor: pointer;
 }
+#proponerUbicacion {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 99999;
+  background: white;
+  color: black;
+  padding: 20px;
+  border-radius: 10px;
+}
 
+#proponerUbicacion[hidden] {
+  display: none !important;
+}
 </style>
 </head>
 <body>
@@ -1785,53 +1802,16 @@ onAuthStateChanged(authCuenta,user=>{
     <p id="estadoPropuestaUbicacion" role="status"></p>
   </form>
 </section>
-
+<script>
 
 <script>
-(function () {
-  function iniciarFormularioUbicacion() {
-    const botonAbrir = document.getElementById("abrirPropuestaUbicacion");
-    const formulario = document.getElementById("proponerUbicacion");
-    const botonCerrar = document.getElementById("cerrarPropuestaUbicacion");
+document.getElementById("abrirPropuestaUbicacion").onclick = function () {
+  document.getElementById("proponerUbicacion").hidden = false;
+};
 
-    if (!botonAbrir || !formulario || !botonCerrar) {
-      console.error("GeoPerú: no se encontró algún elemento del formulario.", {
-        botonAbrir: !!botonAbrir,
-        formulario: !!formulario,
-        botonCerrar: !!botonCerrar
-      });
-      return;
-    }
-
-    botonAbrir.onclick = function () {
-      formulario.hidden = false;
-      formulario.style.display = "block";
-      formulario.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    };
-
-    botonCerrar.onclick = function () {
-      formulario.hidden = true;
-      formulario.style.display = "none";
-      botonAbrir.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    };
-
-    console.log("GeoPerú: botón de propuestas conectado correctamente.");
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", iniciarFormularioUbicacion, {
-      once: true
-    });
-  } else {
-    iniciarFormularioUbicacion();
-  }
-})();
+document.getElementById("cerrarPropuestaUbicacion").onclick = function () {
+  document.getElementById("proponerUbicacion").hidden = true;
+};
 </script>
   
 </body>
