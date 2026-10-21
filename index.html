@@ -1635,8 +1635,9 @@ if (botonElegirPunto && textoCoordenadas) {
 
     latitudPropuesta = evento.lngLat.lat;
     longitudPropuesta = evento.lngLat.lng;
-    window.latitudPropuesta = latitudPropuesta;
-    window.longitudPropuesta = longitudPropuesta;
+
+    window.latitudPropuesta = evento.lngLat.lat;
+    window.longitudPropuesta = evento.lngLat.lng;
     seleccionandoPuntoPropuesta = false;
 
     textoCoordenadas.textContent =
