@@ -1820,13 +1820,20 @@ if (formularioPropuesta) {
       return;
     }
 
-    if (
-      typeof window.latitudPropuesta !== "number" ||
-      typeof window.longitudPropuesta !== "number"
-    ) {
-      estado.textContent = "Primero debes elegir un punto en el mapa.";
-      return;
-    }
+    const latitud = window.latitudPropuesta;
+const longitud = window.longitudPropuesta;
+
+if (
+  latitud === null ||
+  latitud === undefined ||
+  longitud === null ||
+  longitud === undefined ||
+  !Number.isFinite(Number(latitud)) ||
+  !Number.isFinite(Number(longitud))
+) {
+  estado.textContent = "Primero debes elegir un punto en el mapa.";
+  return;
+}
 
     boton.disabled = true;
     estado.textContent = "Enviando propuesta...";
