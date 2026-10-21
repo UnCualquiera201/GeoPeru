@@ -79,6 +79,28 @@ button.rojo{background:#b83232}
 #botonReabrir{top:66px;left:10px}
 #fichaEstacion{top:66px;left:64px;width:calc(100vw - 76px);max-width:340px;max-height:calc(100vh - 80px)}
 }
+
+#botonCuenta{position:fixed;z-index:12;top:14px;right:14px;padding:11px 14px;border:0;border-radius:12px;background:#087443;color:white;font-weight:bold;font-size:13px;box-shadow:0 3px 14px #0004;cursor:pointer;max-width:calc(100vw - 150px)}
+#modalCuenta{display:none;position:fixed;inset:0;z-index:50;background:#0b1729a8;align-items:center;justify-content:center;padding:16px}
+#modalCuenta.visible{display:flex}
+.cuenta-tarjeta{width:100%;max-width:410px;max-height:calc(100vh - 32px);overflow:auto;background:white;border-radius:18px;box-shadow:0 12px 40px #0005;padding:22px}
+.cuenta-cabecera{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.cuenta-cabecera h2{margin:0;font-size:22px;color:#087443}
+#cerrarCuenta{border:0;border-radius:8px;width:34px;height:34px;font-size:22px;cursor:pointer;background:#edf1f5;color:#172033}
+.cuenta-tabs{display:flex;gap:7px;margin:12px 0}
+.cuenta-tabs button{flex:1;border:0;border-radius:9px;padding:10px;background:#e8edf3;color:#172033;font-weight:bold;cursor:pointer}
+.cuenta-tabs button.activa{background:#087443;color:white}
+#formCuenta label{display:block;font-size:13px;font-weight:bold;margin-top:10px}
+#formCuenta input{margin-top:5px}
+#estadoCuenta{font-size:13px;line-height:1.45;padding:10px;border-radius:8px;background:#f1f5f9;margin-top:10px;overflow-wrap:anywhere}
+#estadoCuenta.error{background:#fff0f0;color:#a11}
+#perfilCuenta{display:none;font-size:13px;line-height:1.5;background:#f1f5f9;border-radius:10px;padding:12px;margin-top:12px}
+#perfilCuenta.visible{display:block}
+#panelAdmin{display:none;margin-top:12px;padding:12px;border:1px solid #b7d8c4;border-radius:10px;background:#f0faf3}
+#panelAdmin.visible{display:block}
+#listaUsuariosAdmin{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:600px){#botonCuenta{top:10px;right:10px;padding:9px 10px;font-size:12px;max-width:150px}.cuenta-tarjeta{padding:18px}}
+
 </style>
 </head>
 <body>
@@ -86,6 +108,7 @@ button.rojo{background:#b83232}
 <div id="mapa"></div>
 <div id="marca">🇵🇪 GeoPerú</div>
 <button id="botonSatelite" type="button" aria-pressed="false">🛰️ Satélite</button>
+<button id="botonCuenta" type="button">Iniciar sesión</button>
 <button id="botonAtrasRuta" type="button" aria-label="Volver atrás a la ficha de la estación">← Atras</button>
 
 <nav id="barra" aria-label="Herramientas del mapa">
@@ -204,6 +227,26 @@ button.rojo{background:#b83232}
 <button class="accion secundario" id="rutaEstacion">Usar como destino</button>
 </div>
 </aside>
+
+
+<div id="modalCuenta" role="dialog" aria-modal="true" aria-labelledby="tituloCuenta">
+  <div class="cuenta-tarjeta">
+    <div class="cuenta-cabecera"><h2 id="tituloCuenta">Cuenta GeoPerú</h2><button id="cerrarCuenta" type="button" aria-label="Cerrar">×</button></div>
+    <div id="zonaAcceso">
+      <p style="font-size:13px;color:#596579;line-height:1.5;margin:0">Regístrate o inicia sesión para usar tu cuenta de GeoPerú.</p>
+      <div class="cuenta-tabs"><button type="button" id="tabIngreso" class="activa">Iniciar sesión</button><button type="button" id="tabRegistro">Crear cuenta</button></div>
+      <form id="formCuenta">
+        <div id="campoUsuario" style="display:none"><label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" autocomplete="username" minlength="3" maxlength="24" placeholder="Ej.: GeoUsuario" /></div>
+        <label for="correoCuenta">Correo electrónico</label><input id="correoCuenta" type="email" autocomplete="email" required placeholder="correo@ejemplo.com" />
+        <label for="contrasenaCuenta">Contraseña</label><input id="contrasenaCuenta" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo 6 caracteres" />
+        <button class="accion" id="enviarCuenta" type="submit">Iniciar sesión</button>
+      </form>
+      <div id="estadoCuenta" role="status">Conectando con Firebase…</div>
+    </div>
+    <div id="perfilCuenta"><strong id="perfilNombre"></strong><br><span id="perfilCorreo"></span><p id="perfilRol"></p><button class="accion secundario" id="cerrarSesion" type="button">Cerrar sesión</button></div>
+    <div id="panelAdmin"><strong>🛡️ Panel de administrador</strong><p style="font-size:12px">Vista de cuentas registradas. El rol administrativo debe asignarse manualmente desde Firebase Console.</p><div id="listaUsuariosAdmin">Cargando usuarios…</div></div>
+  </div>
+</div>
 
 <script>
 const CENTRO_LIMA = [-77.0428, -12.0464];
@@ -1146,5 +1189,163 @@ dibujarAlimentadores();
 
 window.addEventListener("resize",()=>mapa.resize());
 </script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqOSnxrZddWu4ciUb7XV374o8F3pGFkDM",
+  authDomain: "geoperu-dbfb5.firebaseapp.com",
+  projectId: "geoperu-dbfb5",
+  storageBucket: "geoperu-dbfb5.firebasestorage.app",
+  messagingSenderId: "627647778641",
+  appId: "1:627647778641:web:af65259c893adbd4c1cd70",
+  measurementId: "G-GP9G47SN41"
+};
+
+const appCuenta = initializeApp(firebaseConfig, "GeoPeruAuth");
+const authCuenta = getAuth(appCuenta);
+const dbCuenta = getFirestore(appCuenta);
+const modalCuenta = document.getElementById("modalCuenta");
+const formCuenta = document.getElementById("formCuenta");
+const estadoCuenta = document.getElementById("estadoCuenta");
+const campoUsuario = document.getElementById("campoUsuario");
+const nombreUsuarioInput = document.getElementById("nombreUsuario");
+const correoInput = document.getElementById("correoCuenta");
+const contrasenaInput = document.getElementById("contrasenaCuenta");
+const enviarCuenta = document.getElementById("enviarCuenta");
+let modoCuenta = "ingreso";
+let perfilActual = null;
+
+function mensajeCuenta(texto, error=false) {
+  estadoCuenta.textContent = texto;
+  estadoCuenta.classList.toggle("error", error);
+}
+function cambiarModoCuenta(modo) {
+  modoCuenta = modo;
+  const registro = modo === "registro";
+  campoUsuario.style.display = registro ? "block" : "none";
+  nombreUsuarioInput.required = registro;
+  contrasenaInput.autocomplete = registro ? "new-password" : "current-password";
+  document.getElementById("tabIngreso").classList.toggle("activa", !registro);
+  document.getElementById("tabRegistro").classList.toggle("activa", registro);
+  enviarCuenta.textContent = registro ? "Crear cuenta" : "Iniciar sesión";
+  mensajeCuenta(registro ? "Elige un nombre de usuario único." : "Ingresa tu correo y contraseña.");
+}
+document.getElementById("botonCuenta").addEventListener("click",()=>modalCuenta.classList.add("visible"));
+document.getElementById("cerrarCuenta").addEventListener("click",()=>modalCuenta.classList.remove("visible"));
+modalCuenta.addEventListener("click",e=>{if(e.target===modalCuenta)modalCuenta.classList.remove("visible")});
+document.getElementById("tabIngreso").addEventListener("click",()=>cambiarModoCuenta("ingreso"));
+document.getElementById("tabRegistro").addEventListener("click",()=>cambiarModoCuenta("registro"));
+document.getElementById("cerrarSesion").addEventListener("click",async()=>{try{await signOut(authCuenta);mensajeCuenta("Has cerrado sesión.");}catch(e){mensajeCuenta(traducirError(e),true)}});
+
+function traducirError(error) {
+  const codigos = {
+    "auth/email-already-in-use":"Ese correo ya tiene una cuenta.",
+    "auth/invalid-email":"El correo electrónico no es válido.",
+    "auth/weak-password":"La contraseña debe tener al menos 6 caracteres.",
+    "auth/invalid-credential":"El correo o la contraseña son incorrectos.",
+    "auth/user-not-found":"No existe una cuenta con ese correo.",
+    "auth/wrong-password":"La contraseña es incorrecta.",
+    "auth/too-many-requests":"Hubo demasiados intentos. Espera e inténtalo más tarde.",
+    "permission-denied":"Firebase bloqueó la operación. Hay que revisar las reglas de Firestore.",
+    "unavailable":"Firebase no está disponible ahora. Inténtalo de nuevo."
+  };
+  return codigos[error.code] || (error.message || "Ocurrió un error.");
+}
+
+formCuenta.addEventListener("submit",async e=>{
+  e.preventDefault();
+  enviarCuenta.disabled = true;
+  mensajeCuenta(modoCuenta === "registro" ? "Creando cuenta…" : "Iniciando sesión…");
+  try {
+    const email = correoInput.value.trim().toLowerCase();
+    const password = contrasenaInput.value;
+    if(modoCuenta === "registro") {
+      const username = nombreUsuarioInput.value.trim();
+      const usernameKey = username.toLocaleLowerCase("es");
+      if(!/^[a-zA-Z0-9_]{3,24}$/.test(username)) throw new Error("El nombre debe tener 3–24 caracteres: letras, números o guion bajo.");
+      const cred = await createUserWithEmailAndPassword(authCuenta,email,password);
+      await updateProfile(cred.user,{displayName:username});
+      try {
+        await runTransaction(dbCuenta, async tx => {
+          const usernameRef = doc(dbCuenta,"usernames",usernameKey);
+          const userRef = doc(dbCuenta,"users",cred.user.uid);
+          const usernameSnap = await tx.get(usernameRef);
+          if(usernameSnap.exists()) throw new Error("Ese nombre de usuario ya está ocupado. Elige otro.");
+          tx.set(usernameRef,{uid:cred.user.uid,username:username});
+          tx.set(userRef,{uid:cred.user.uid,username:username,usernameLower:usernameKey,email:email,role:"usuario",createdAt:new Date().toISOString()});
+        });
+      } catch(profileError) {
+        await signOut(authCuenta).catch(()=>{});
+        throw profileError;
+      }
+      mensajeCuenta("¡Cuenta creada! Ya puedes usar GeoPerú.");
+    } else {
+      await signInWithEmailAndPassword(authCuenta,email,password);
+      mensajeCuenta("Sesión iniciada correctamente.");
+    }
+    formCuenta.reset();
+  } catch(error) {
+    mensajeCuenta(traducirError(error),true);
+  } finally { enviarCuenta.disabled = false; }
+});
+
+async function cargarPerfil(user) {
+  const boton = document.getElementById("botonCuenta");
+  const zona = document.getElementById("zonaAcceso");
+  const perfil = document.getElementById("perfilCuenta");
+  const adminPanel = document.getElementById("panelAdmin");
+  if(!user) {
+    perfilActual = null;
+    boton.textContent = "Iniciar sesión";
+    zona.style.display = "block";
+    perfil.classList.remove("visible");
+    adminPanel.classList.remove("visible");
+    return;
+  }
+  let data = {username:user.displayName || "Usuario",role:"usuario",email:user.email || ""};
+  try {
+    const snap = await getDoc(doc(dbCuenta,"users",user.uid));
+    if(snap.exists()) data = {...data,...snap.data()};
+  } catch(error) {
+    console.warn("No se pudo leer el perfil de GeoPerú:",error);
+  }
+  perfilActual = { ...data, uid:user.uid };
+  boton.textContent = data.username || "Mi cuenta";
+  zona.style.display = "none";
+  perfil.classList.add("visible");
+  document.getElementById("perfilNombre").textContent = data.username || "Usuario";
+  document.getElementById("perfilCorreo").textContent = data.email || user.email || "";
+  document.getElementById("perfilRol").textContent = "Rol: " + (data.role === "admin" ? "Administrador" : "Usuario");
+  adminPanel.classList.toggle("visible",data.role === "admin");
+  if(data.role === "admin") await cargarUsuariosAdmin();
+}
+
+async function cargarUsuariosAdmin() {
+  const salida = document.getElementById("listaUsuariosAdmin");
+  salida.textContent = "Cargando usuarios…";
+  try {
+    const resultados = await getDocs(collection(dbCuenta,"users"));
+    salida.replaceChildren();
+    if(resultados.empty) { salida.textContent = "Todavía no hay perfiles."; return; }
+    resultados.forEach(snap=>{
+      const d=snap.data();
+      const linea=document.createElement("p");
+      linea.style.borderBottom="1px solid #dbe8df";
+      linea.style.padding="6px 0";
+      linea.textContent=(d.username || "Sin nombre")+" · "+(d.email || "sin correo")+" · "+(d.role === "admin" ? "Administrador" : "Usuario");
+      salida.appendChild(linea);
+    });
+  } catch(error) { salida.textContent = "No se pudo leer la lista: " + traducirError(error); }
+}
+
+onAuthStateChanged(authCuenta,user=>{
+  cargarPerfil(user).catch(error=>console.error("Error cargando perfil",error));
+});
+</script>
+
 </body>
 </html>
