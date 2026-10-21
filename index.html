@@ -1566,6 +1566,36 @@ document.getElementById("buscarAlimentador")
 dibujarAlimentadores();
 
 window.addEventListener("resize",()=>{mapa.resize();});
+  
+// ELEGIR PUNTO PARA UNA PROPUESTA
+let seleccionandoPuntoPropuesta = false;
+let latitudPropuesta = null;
+let longitudPropuesta = null;
+
+const botonElegirPunto = document.getElementById("elegirPuntoUbicacion");
+const textoCoordenadas = document.getElementById("coordenadasUbicacion");
+
+if (botonElegirPunto && textoCoordenadas) {
+  botonElegirPunto.addEventListener("click", function () {
+    seleccionandoPuntoPropuesta = true;
+    textoCoordenadas.textContent =
+      "Ahora haz clic en el lugar que deseas proponer en el mapa.";
+  });
+
+  mapa.on("click", function (evento) {
+    if (!seleccionandoPuntoPropuesta) return;
+
+    latitudPropuesta = evento.lngLat.lat;
+    longitudPropuesta = evento.lngLat.lng;
+    seleccionandoPuntoPropuesta = false;
+
+    textoCoordenadas.textContent =
+      "Punto seleccionado: " +
+      latitudPropuesta.toFixed(6) +
+      ", " +
+      longitudPropuesta.toFixed(6);
+  });
+}
 </script>
 
 <script type="module">
