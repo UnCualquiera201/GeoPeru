@@ -1786,6 +1786,7 @@ onAuthStateChanged(authCuenta,user=>{
   </form>
 </section>
 
+
 <script>
 (function () {
   function iniciarFormularioUbicacion() {
@@ -1794,46 +1795,44 @@ onAuthStateChanged(authCuenta,user=>{
     const botonCerrar = document.getElementById("cerrarPropuestaUbicacion");
 
     if (!botonAbrir || !formulario || !botonCerrar) {
-      console.error(
-        "GeoPerú: falta el botón de apertura, el formulario o el botón Cancelar.",
-        {
-          botonAbrir: !!botonAbrir,
-          formulario: !!formulario,
-          botonCerrar: !!botonCerrar
-        }
-      );
+      console.error("GeoPerú: no se encontró algún elemento del formulario.", {
+        botonAbrir: !!botonAbrir,
+        formulario: !!formulario,
+        botonCerrar: !!botonCerrar
+      });
       return;
     }
 
-    botonAbrir.addEventListener("click", function () {
+    botonAbrir.onclick = function () {
       formulario.hidden = false;
+      formulario.style.display = "block";
       formulario.scrollIntoView({
         behavior: "smooth",
         block: "start"
       });
-    });
+    };
 
-    botonCerrar.addEventListener("click", function () {
+    botonCerrar.onclick = function () {
       formulario.hidden = true;
+      formulario.style.display = "none";
       botonAbrir.scrollIntoView({
         behavior: "smooth",
         block: "center"
       });
-    });
+    };
+
+    console.log("GeoPerú: botón de propuestas conectado correctamente.");
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      iniciarFormularioUbicacion,
-      { once: true }
-    );
+    document.addEventListener("DOMContentLoaded", iniciarFormularioUbicacion, {
+      once: true
+    });
   } else {
     iniciarFormularioUbicacion();
   }
 })();
 </script>
-
-
+  
 </body>
 </html>
