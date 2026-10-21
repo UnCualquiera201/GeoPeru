@@ -1857,6 +1857,7 @@ async function cargarPropuestasAdmin() {
   }
 }
 
+
 async function cambiarEstadoPropuesta(id, nuevoEstado, botonAprobar, botonRechazar) {
   if (!perfilActual || perfilActual.role !== "admin") {
     alert("Solo un administrador puede revisar propuestas.");
@@ -1867,18 +1868,55 @@ async function cambiarEstadoPropuesta(id, nuevoEstado, botonAprobar, botonRechaz
   botonRechazar.disabled = true;
 
   try {
-    await updateDoc(doc(dbCuenta, "propuestasUbicacion", id), {
-      estado: nuevoEstado
+    const propuestaRef = doc(dbCuenta, "propuestasUbicacion", id);
+    const ubicacionRef = doc(dbCuenta, "ubicacionesPublicas", id);
+
+    await runTransaction(dbCuenta, async (transaccion) => {
+      const documento = await transaccion.get(propuestaRef);
+
+      if (!documento.exists()) {
+        throw new Error("La propuesta ya no existe.");
+      }
+
+      const propuesta = documento.data();
+
+      if (propuesta.estado !== "pendiente") {
+        throw new Error("Esta propuesta ya fue revisada.");
+      }
+
+      if (nuevoEstado === "aprobada") {
+        transaccion.set(ubicacionRef, {
+          nombre: propuesta.nombre,
+          categoria: propuesta.categoria,
+          emoji: propuesta.emoji || "📍",
+          descripcion: propuesta.descripcion || "",
+          latitud: propuesta.latitud,
+          longitud: propuesta.longitud,
+          activa: true
+        });
+      }
+
+      transaccion.update(propuestaRef, {
+        estado: nuevoEstado
+      });
     });
 
     await cargarPropuestasAdmin();
+
+    alert(
+      nuevoEstado === "aprobada"
+        ? "¡Ubicación aprobada y publicada!"
+        : "Propuesta rechazada."
+    );
+
   } catch (error) {
-    console.error("Error actualizando propuesta:", error);
-    alert("No se pudo actualizar. Revisa las reglas de Firestore.");
+    console.error("Error revisando propuesta:", error);
+    alert("No se pudo revisar la propuesta. Comprueba las reglas de Firestore.");
     botonAprobar.disabled = false;
     botonRechazar.disabled = false;
   }
 }
+
 
 document.getElementById("recargarPropuestas")?.addEventListener(
   "click",
