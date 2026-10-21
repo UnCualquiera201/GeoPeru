@@ -1793,6 +1793,98 @@ async function cargarPerfil(user) {
     adminPanel.classList.remove("visible");
     return;
   }
+  
+async function cargarPropuestasAdmin() {
+  const lista = document.getElementById("listaPropuestasAdmin");
+  if (!lista) return;
+
+  if (!perfilActual || perfilActual.role !== "admin") {
+    lista.textContent = "No tienes permisos de administrador.";
+    return;
+  }
+
+  lista.textContent = "Cargando propuestas...";
+
+  try {
+    const consulta = query(
+      collection(dbCuenta, "propuestasUbicacion"),
+      where("estado", "==", "pendiente")
+    );
+
+    const resultado = await getDocs(consulta);
+    lista.replaceChildren();
+
+    if (resultado.empty) {
+      lista.textContent = "No hay propuestas pendientes.";
+      return;
+    }
+
+    resultado.forEach((documento) => {
+      const propuesta = documento.data();
+      const tarjeta = document.createElement("article");
+      const titulo = document.createElement("h4");
+      const detalle = document.createElement("p");
+      const coordenadas = document.createElement("p");
+      const aprobar = document.createElement("button");
+      const rechazar = document.createElement("button");
+
+      titulo.textContent = `${propuesta.emoji || "📍"} ${propuesta.nombre || "Sin nombre"}`;
+      detalle.textContent =
+        `${propuesta.categoria || "Sin categoría"} — ${propuesta.descripcion || ""}`;
+      coordenadas.textContent =
+        `Latitud: ${propuesta.latitud}, Longitud: ${propuesta.longitud}`;
+
+      aprobar.type = "button";
+      aprobar.textContent = "Aprobar";
+      rechazar.type = "button";
+      rechazar.textContent = "Rechazar";
+
+      aprobar.addEventListener("click", () =>
+        cambiarEstadoPropuesta(documento.id, "aprobada", aprobar, rechazar)
+      );
+
+      rechazar.addEventListener("click", () =>
+        cambiarEstadoPropuesta(documento.id, "rechazada", aprobar, rechazar)
+      );
+
+      tarjeta.append(titulo, detalle, coordenadas, aprobar, rechazar);
+      lista.appendChild(tarjeta);
+    });
+  } catch (error) {
+    console.error("Error cargando propuestas:", error);
+    lista.textContent =
+      "No se pudieron cargar las propuestas. Comprueba las reglas de Firestore.";
+  }
+}
+
+async function cambiarEstadoPropuesta(id, nuevoEstado, botonAprobar, botonRechazar) {
+  if (!perfilActual || perfilActual.role !== "admin") {
+    alert("Solo un administrador puede revisar propuestas.");
+    return;
+  }
+
+  botonAprobar.disabled = true;
+  botonRechazar.disabled = true;
+
+  try {
+    await updateDoc(doc(dbCuenta, "propuestasUbicacion", id), {
+      estado: nuevoEstado
+    });
+
+    await cargarPropuestasAdmin();
+  } catch (error) {
+    console.error("Error actualizando propuesta:", error);
+    alert("No se pudo actualizar. Revisa las reglas de Firestore.");
+    botonAprobar.disabled = false;
+    botonRechazar.disabled = false;
+  }
+}
+
+document.getElementById("recargarPropuestas")?.addEventListener(
+  "click",
+  cargarPropuestasAdmin
+);
+
   let data = {username:user.displayName || "Usuario",role:"usuario",email:user.email || ""};
   try {
     const snap = await getDoc(doc(dbCuenta,"users",user.uid));
