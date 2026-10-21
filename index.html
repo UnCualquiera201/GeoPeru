@@ -1656,7 +1656,20 @@ if (botonElegirPunto && textoCoordenadas) {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, runTransaction, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  runTransaction,
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCqOSnxrZddWu4ciUb7XV374o8F3pGFkDM",
