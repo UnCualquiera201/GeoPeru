@@ -1,0 +1,1150 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoPerú</title>
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;color:#172033;overflow:hidden}
+#mapa{position:fixed;inset:0;width:100%;height:100%}
+#marca{position:fixed;top:14px;left:14px;z-index:5;padding:12px 16px;border-radius:13px;background:#087443;color:white;font-size:19px;font-weight:bold;box-shadow:0 3px 15px #0003;pointer-events:none}
+#barra{position:fixed;z-index:10;left:14px;top:78px;display:flex;flex-direction:column;gap:7px;padding:8px;background:white;border-radius:16px;box-shadow:0 4px 20px #0003}
+.icono{width:46px;height:46px;border:0;border-radius:11px;background:transparent;color:#087443;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0;padding:0}
+.icono:hover{background:#e9f4ed}
+.icono.activo{background:#087443;color:white}
+.icono svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#panel{position:fixed;z-index:9;top:78px;left:76px;width:330px;max-width:calc(100vw - 92px);max-height:calc(100vh - 96px);overflow-y:auto;background:white;border-radius:16px;box-shadow:0 5px 24px #0003}
+#panel.oculto{display:none}
+.panel-cabecera{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;background:#087443;color:white;border-radius:16px 16px 0 0;position:sticky;top:0;z-index:2}
+.panel-cabecera h2{font-size:17px;margin:0}
+#cerrarPanel{width:32px;height:32px;border:0;border-radius:8px;color:white;background:#ffffff25;font-size:22px;cursor:pointer}
+.contenido-panel{padding:15px}
+.herramienta{display:none}
+.herramienta.activa{display:block}
+.herramienta h3{margin:0 0 10px;font-size:17px}
+.herramienta p{font-size:13px;color:#596579;line-height:1.5}
+input{width:100%;padding:11px;margin:5px 0;border:1px solid #cbd3df;border-radius:9px;font-size:14px;background:white;color:#172033}
+button.accion{width:100%;padding:11px;margin:4px 0;border:0;border-radius:9px;background:#087443;color:white;font-size:14px;font-weight:bold;cursor:pointer}
+button.accion:hover{filter:brightness(.94)}
+button.accion:disabled{opacity:.6;cursor:wait}
+button.secundario{background:#e8edf3;color:#172033}
+button.azul{background:#1769aa}
+button.rojo{background:#b83232}
+.fila{display:flex;gap:6px}
+.fila button{flex:1}
+#estado,#estadoRuta,#estadoMetropolitano{padding:10px;margin-top:8px;background:#f1f5f9;border-radius:8px;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.resultado{width:100%;display:block;padding:10px;margin:5px 0;text-align:left;background:#f1f5f9;color:#172033;border:1px solid #dce3ec;border-radius:8px;font-size:13px;line-height:1.4;cursor:pointer}
+.resultado:hover{background:#e3f4e9}
+.marcador-metropolitano{width:34px;height:34px;border-radius:11px;background:#e32636;border:2px solid white;box-shadow:0 2px 8px #0008;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:4px;transition:transform .15s}
+.marcador-metropolitano svg,.marcador-punto-troncal svg{width:100%;height:100%;display:block}
+.marcador-metropolitano:hover{transform:scale(1.15)}
+#botonReabrir{display:none;position:fixed;z-index:8;left:14px;top:78px;width:46px;height:46px;border:0;border-radius:12px;background:#087443;color:white;font-size:22px;box-shadow:0 3px 12px #0003;cursor:pointer}
+#botonReabrir.visible{display:block}
+#botonSatelite{position:fixed;z-index:8;right:14px;top:96px;padding:11px 14px;border:0;border-radius:12px;background:white;color:#172033;font-weight:bold;font-size:13px;box-shadow:0 3px 14px #0004;cursor:pointer}
+#botonSatelite.activo{background:#087443;color:white}
+#botonAtrasRuta{display:none;position:fixed;z-index:15;top:14px;left:50%;transform:translateX(-50%);padding:11px 16px;border:0;border-radius:12px;background:white;color:#172033;font-weight:bold;font-size:14px;box-shadow:0 3px 14px #0004;cursor:pointer;white-space:nowrap}
+#botonAtrasRuta.visible{display:block}
+@media(max-width:600px){#botonSatelite{top:88px;right:10px;padding:10px 11px;font-size:12px}}
+#fichaEstacion{display:none;position:fixed;z-index:20;top:78px;left:76px;width:340px;max-width:calc(100vw - 92px);max-height:calc(100vh - 96px);overflow-y:auto;background:white;border-radius:16px;box-shadow:0 5px 25px #0003}
+#fichaEstacion.visible{display:block}
+.ficha-imagen{height:100px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#087443,#19a66b);color:white;font-size:48px}
+.ficha-contenido{padding:17px}
+.ficha-superior{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+#fichaNombre{margin:0 0 9px;font-size:21px;line-height:1.25}
+#cerrarFicha{border:0;background:#edf1f5;border-radius:8px;font-size:22px;width:32px;height:32px;flex-shrink:0;cursor:pointer}
+.ficha-etiqueta{display:inline-block;padding:5px 9px;border-radius:20px;background:#e3f4e9;color:#087443;font-size:12px;font-weight:bold}
+.ficha-dato{padding:12px 0;border-bottom:1px solid #e8edf2;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.ficha-dato strong{display:block;margin-bottom:5px;color:#263448}
+#fichaDescripcion{color:#596579}
+.lista-rutas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.etiqueta-ruta{display:inline-block;padding:6px 9px;border:0;border-radius:8px;background:#e3f4e9;color:#087443;font-size:12px;font-weight:bold;cursor:pointer}.etiqueta-ruta:hover{filter:brightness(.94)}
+.etiqueta-expreso{background:#e5efff;color:#1858a8}.marcador-punto-troncal{width:32px;height:32px;border-radius:10px;border:2px solid white;background:#1769aa;color:white;box-shadow:0 2px 8px #0008;display:flex;align-items:center;justify-content:center;padding:4px;cursor:pointer}
+.aviso-rutas{margin-top:9px;color:#596579;font-size:12px;line-height:1.45}
+.alimentador-codigo{display:inline-block;min-width:58px;margin-right:5px;color:#087443;font-weight:bold}
+.alimentador-conexion{display:block;margin-top:5px;color:#596579;font-size:12px}
+.alimentador-detalle{margin-top:12px;padding:12px;background:#f1f5f9;border-radius:10px;font-size:13px;line-height:1.5}
+.alimentador-detalle h3{margin:0 0 8px}
+.etiqueta-informativa{display:inline-block;padding:5px 8px;border-radius:8px;background:#fff2d8;color:#805400;font-size:11px;font-weight:bold}
+@media(max-width:600px){
+#marca{top:10px;left:10px;padding:10px 13px;font-size:17px}
+#barra{top:66px;left:10px;gap:5px;padding:6px}
+.icono{width:42px;height:42px}
+#panel{top:66px;left:64px;width:calc(100vw - 76px);max-width:340px;max-height:calc(100vh - 80px)}
+#botonReabrir{top:66px;left:10px}
+#fichaEstacion{top:66px;left:64px;width:calc(100vw - 76px);max-width:340px;max-height:calc(100vh - 80px)}
+}
+</style>
+</head>
+<body>
+
+<div id="mapa"></div>
+<div id="marca">🇵🇪 GeoPerú</div>
+<button id="botonSatelite" type="button" aria-pressed="false">🛰️ Satélite</button>
+<button id="botonAtrasRuta" type="button" aria-label="Volver atrás a la ficha de la estación">← Atras</button>
+
+<nav id="barra" aria-label="Herramientas del mapa">
+
+<button class="icono activo" data-seccion="buscar" title="Buscar" aria-label="Buscar">
+<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+</button>
+
+<button class="icono" data-seccion="rutas" title="Rutas" aria-label="Rutas">
+<svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M8 16 16 8M6 15V9a3 3 0 0 1 3-3h6"/></svg>
+</button>
+
+<button class="icono" data-seccion="gps" title="Mi ubicación" aria-label="Mi ubicación">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>
+</button>
+
+<button class="icono" data-seccion="ajustes" title="Ajustes" aria-label="Ajustes">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-2 .9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-2-.9l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 2-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 2 .9l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2z"/></svg>
+</button>
+
+</nav>
+
+<button id="botonReabrir" aria-label="Abrir panel" title="Abrir panel">☰</button>
+
+<aside id="panel">
+<div class="panel-cabecera">
+<h2 id="tituloPanel">Buscar un lugar</h2>
+<button id="cerrarPanel" aria-label="Cerrar panel">×</button>
+</div>
+
+<div class="contenido-panel">
+
+<section class="herramienta activa" id="seccion-buscar">
+<h3>Buscar un lugar</h3>
+<input id="consulta" placeholder="Ej.: Plaza de Armas de Lima">
+<button class="accion" id="buscar">Buscar en el mapa</button>
+<div id="resultados"></div>
+</section>
+
+<section class="herramienta" id="seccion-rutas">
+<h3>Planificar una ruta</h3>
+<input id="origen" placeholder="Punto de partida">
+<input id="destino" placeholder="Destino">
+<div class="fila">
+<button class="accion secundario" id="intercambiar">⇅ Intercambiar</button>
+<button class="accion azul" id="calcularRuta">Calcular ruta</button>
+</div>
+<button class="accion secundario" id="alternarRuta">Ocultar ruta</button>
+<button class="accion rojo" id="limpiarRuta">Limpiar ruta</button>
+<div id="estadoRuta">Escribe el origen y el destino para calcular una ruta.</div>
+</section>
+
+<section class="herramienta" id="seccion-gps">
+<h3>Mi ubicación</h3>
+<p>Centra el mapa en tu posición actual. El navegador puede pedir permiso para usar el GPS.</p>
+<button class="accion azul" id="miUbicacion">📍 Encontrar mi ubicación</button>
+<button class="accion secundario" id="volverLima">Volver a Lima</button>
+</section>
+
+<section class="herramienta" id="seccion-metro">
+<h3>Estaciones del Metropolitano</h3>
+<p>Pulsa el botón para mostrar u ocultar las estaciones en el mapa.</p>
+<button class="accion azul" id="botonMetropolitano">Mostrar estaciones</button>
+<div id="estadoMetropolitano">Estaciones ocultas.</div>
+</section>
+
+<section class="herramienta" id="seccion-alimentadores">
+<h3>Alimentadores del norte</h3>
+<p>Busca por código o nombre para consultar los servicios alimentadores.</p>
+<input id="buscarAlimentador" placeholder="Ej.: AN-02 o Naranjal">
+<button class="accion azul" id="botonAN01">Mostrar recorrido AN-01 (ida y vuelta)</button>
+<div id="estadoAN01" class="alimentador-detalle">Recorrido AN-01 oculto. Usa el botón para mostrar los paraderos registrados.</div>
+<div id="listaAlimentadores"></div>
+<div id="detalleAlimentador" class="alimentador-detalle" style="display:none"></div>
+<p><span class="etiqueta-informativa">Información por verificar</span></p>
+<p>La lista no representa recorridos completos ni confirma todos los paraderos. Comprueba la información vigente con la ATU antes de viajar.</p>
+</section>
+
+<section class="herramienta" id="seccion-ajustes">
+<h3>Ajustes del mapa</h3>
+<button class="accion secundario" id="vistaLima">Centrar mapa en Lima</button>
+<button class="accion secundario" id="cerrarTodo">Cerrar este panel</button>
+<div id="estado">Cargando mapa...</div>
+</section>
+
+</div>
+</aside>
+
+<aside id="fichaEstacion">
+<div class="ficha-imagen">🚌</div>
+<div class="ficha-contenido">
+<div class="ficha-superior">
+<div>
+<h2 id="fichaNombre">Nombre de la estación</h2>
+<span class="ficha-etiqueta" id="fichaEtiqueta">Metropolitano</span>
+</div>
+<button id="cerrarFicha" aria-label="Cerrar ficha">×</button>
+</div>
+<div class="ficha-dato">
+<strong>📍 Ubicación</strong>
+<span id="fichaCoordenadas"></span>
+</div>
+<div class="ficha-dato">
+<strong>🚏 Tipo de servicio</strong>
+<span id="fichaTipoServicio">Estación del sistema Metropolitano de Lima.</span>
+</div>
+<div class="ficha-dato">
+<strong>ℹ️ Información</strong>
+<span id="fichaDescripcion"></span>
+</div>
+<div class="ficha-dato">
+<strong>🚌 Rutas que paran aquí</strong>
+<div id="fichaRutas"></div>
+</div>
+<button class="accion" id="irEstacion">Centrar mapa aquí</button>
+<button class="accion secundario" id="rutaEstacion">Usar como destino</button>
+</div>
+</aside>
+
+<script>
+const CENTRO_LIMA = [-77.0428, -12.0464];
+
+const mapa = new maplibregl.Map({
+  container: "mapa",
+  style: "https://tiles.openfreemap.org/styles/liberty",
+  center: CENTRO_LIMA,
+  zoom: 11
+});
+
+mapa.addControl(new maplibregl.NavigationControl(), "top-right");
+mapa.addControl(new maplibregl.ScaleControl(), "bottom-right");
+
+let marcadorBusqueda = null;
+let marcadorGPS = null;
+let marcadoresEstaciones = [];
+let estacionesVisibles = false;
+let rutaVisible = true;
+let estacionSeleccionada = null;
+let vistaSatelite = false;
+let estiloOFMCache = null;
+let datosRutaActual = {type:"FeatureCollection",features:[]};
+let promesaEstiloOFM = null;
+
+const ESTILO_CALLES = "https://tiles.openfreemap.org/styles/liberty";
+const ESTILO_SATELITE_BASE = {
+  version: 8,
+  sources: {
+    "esri-imagery": {
+      type: "raster",
+      tiles: ["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: "Imagery © Esri"
+    }
+  },
+  layers: [{
+    id: "satelite-imagery",
+    type: "raster",
+    source: "esri-imagery",
+    paint: {"raster-opacity": 1}
+  }]
+};
+
+async function obtenerEstiloOFM() {
+  if (estiloOFMCache) return estiloOFMCache;
+  if (!promesaEstiloOFM) {
+    promesaEstiloOFM = fetch(ESTILO_CALLES).then(respuesta => {
+      if (!respuesta.ok) throw new Error("No se pudo cargar el estilo de etiquetas de OpenFreeMap.");
+      return respuesta.json();
+    }).then(estilo => {
+      estiloOFMCache = estilo;
+      return estilo;
+    }).catch(error => {
+      promesaEstiloOFM = null;
+      throw error;
+    });
+  }
+  return promesaEstiloOFM;
+}
+
+async function crearEstiloSateliteConEtiquetas() {
+  const estiloOFM = await obtenerEstiloOFM();
+  const estilo = JSON.parse(JSON.stringify(ESTILO_SATELITE_BASE));
+  if (estiloOFM.glyphs) estilo.glyphs = estiloOFM.glyphs;
+  if (estiloOFM.sprite) estilo.sprite = estiloOFM.sprite;
+
+  const capasEtiquetas = (estiloOFM.layers || []).filter(capa => capa.type === "symbol");
+  const fuentesNecesarias = [...new Set(capasEtiquetas.map(capa => capa.source).filter(Boolean))];
+  fuentesNecesarias.forEach(nombre => {
+    if (estiloOFM.sources && estiloOFM.sources[nombre]) {
+      estilo.sources[nombre] = JSON.parse(JSON.stringify(estiloOFM.sources[nombre]));
+    }
+  });
+
+  // Solo se copian capas de símbolos/texto. No se copian fondos, calles,
+  // polígonos, edificios ni colores del mapa normal de OpenFreeMap.
+  estilo.layers.push(...capasEtiquetas.map(capa => JSON.parse(JSON.stringify(capa))));
+  return estilo;
+}
+
+function prepararCapaRuta() {
+  if (!mapa.getSource("rutaGeoPeru")) {
+    mapa.addSource("rutaGeoPeru", {type:"geojson", data:datosRutaActual});
+  }
+  if (!mapa.getLayer("rutaGeoPeruLinea")) {
+    mapa.addLayer({
+      id:"rutaGeoPeruLinea",
+      type:"line",
+      source:"rutaGeoPeru",
+      layout:{"line-join":"round","line-cap":"round"},
+      paint:{"line-color":"#1769ff","line-width":5,"line-opacity":0.9}
+    });
+  }
+  mapa.setLayoutProperty("rutaGeoPeruLinea", "visibility", rutaVisible ? "visible" : "none");
+}
+
+async function cambiarVistaSatelite(activar) {
+  const boton = document.getElementById("botonSatelite");
+  boton.disabled = true;
+  try {
+    if (activar) {
+      const estiloSatelite = await crearEstiloSateliteConEtiquetas();
+      vistaSatelite = true;
+      mapa.setStyle(estiloSatelite);
+      boton.classList.add("activo");
+      boton.setAttribute("aria-pressed", "true");
+      boton.textContent = "🗺️ Mapa normal";
+    } else {
+      vistaSatelite = false;
+      mapa.setStyle(ESTILO_CALLES);
+      boton.classList.remove("activo");
+      boton.setAttribute("aria-pressed", "false");
+      boton.textContent = "🛰️ Satélite";
+    }
+  } catch (error) {
+    vistaSatelite = false;
+    boton.classList.remove("activo");
+    boton.setAttribute("aria-pressed", "false");
+    boton.textContent = "🛰️ Satélite";
+    estado("estado", "No se pudieron cargar las etiquetas del satélite: " + (error.message || "error desconocido"));
+  } finally {
+    boton.disabled = false;
+  }
+}
+
+document.getElementById("botonSatelite").addEventListener("click", () => {
+  cambiarVistaSatelite(!vistaSatelite);
+});
+
+function estado(id, mensaje) {
+  document.getElementById(id).textContent = mensaje;
+}
+
+function vacio() {
+  return {type:"FeatureCollection",features:[]};
+}
+
+mapa.on("load", () => {
+  prepararCapaRuta();
+  estado("estado","Mapa cargado correctamente. Estaciones y paraderos cargados en el mapa.");
+  // Mostrar las estaciones del Metropolitano y los paraderos AN-01 al abrir GeoPerú.
+  mostrarEstacionesMetropolitano();
+  mostrarRecorridoAN01();
+  mapa.flyTo({center:CENTRO_LIMA,zoom:10.2,duration:700,essential:true});
+});
+
+mapa.on("style.load", () => {
+  prepararCapaRuta();
+});
+
+mapa.on("error",e=>console.warn("Error del mapa:",e.error));
+
+const NOMBRES_SECCIONES = {
+  buscar:"Buscar un lugar",
+  rutas:"Planificar una ruta",
+  gps:"Mi ubicación",
+  metro:"Estaciones del Metropolitano",
+  alimentadores:"Alimentadores del norte",
+  ajustes:"Ajustes del mapa"
+};
+
+function abrirSeccion(nombre) {
+  document.querySelectorAll(".herramienta").forEach(s=>
+    s.classList.toggle("activa",s.id==="seccion-"+nombre)
+  );
+
+  document.querySelectorAll(".icono").forEach(b=>
+    b.classList.toggle("activo",b.dataset.seccion===nombre)
+  );
+
+  document.getElementById("tituloPanel").textContent=NOMBRES_SECCIONES[nombre];
+  document.getElementById("panel").classList.remove("oculto");
+  document.getElementById("botonReabrir").classList.remove("visible");
+  document.getElementById("fichaEstacion").classList.remove("visible");
+
+  mapa.resize();
+}
+
+function cerrarPanel() {
+  document.getElementById("panel").classList.add("oculto");
+  document.querySelectorAll(".icono").forEach(b=>b.classList.remove("activo"));
+  document.getElementById("botonReabrir").classList.add("visible");
+  mapa.resize();
+}
+
+document.querySelectorAll(".icono").forEach(boton=>{
+  boton.addEventListener("click",()=>{
+    if(!document.getElementById("panel").classList.contains("oculto") &&
+       boton.classList.contains("activo")) {
+      cerrarPanel();
+    } else {
+      abrirSeccion(boton.dataset.seccion);
+    }
+  });
+});
+
+document.getElementById("cerrarPanel").addEventListener("click",cerrarPanel);
+document.getElementById("cerrarTodo").addEventListener("click",cerrarPanel);
+document.getElementById("botonReabrir").addEventListener("click",()=>abrirSeccion("buscar"));
+
+function volverALima() {
+  mapa.flyTo({center:CENTRO_LIMA,zoom:11,essential:true});
+}
+
+document.getElementById("vistaLima").addEventListener("click",volverALima);
+document.getElementById("volverLima").addEventListener("click",volverALima);
+
+async function geocodificar(texto) {
+  if(!texto.trim()) throw new Error("Escribe un lugar antes de continuar.");
+
+  const url=new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q",texto.trim());
+  url.searchParams.set("format","jsonv2");
+  url.searchParams.set("limit","5");
+  url.searchParams.set("countrycodes","pe");
+
+  const respuesta=await fetch(url);
+  if(!respuesta.ok) throw new Error("El servicio de búsqueda no respondió.");
+
+  const datos=await respuesta.json();
+  if(!datos.length) throw new Error("No se encontró el lugar. Prueba otro nombre.");
+
+  return datos;
+}
+
+async function buscarLugar() {
+  const boton=document.getElementById("buscar");
+  const resultados=document.getElementById("resultados");
+  const texto=document.getElementById("consulta").value.trim();
+
+  resultados.replaceChildren();
+
+  if(!texto) {
+    estado("estado","Escribe el nombre de un lugar.");
+    return;
+  }
+
+  boton.disabled=true;
+  boton.textContent="Buscando...";
+
+  try {
+    const lugares=await geocodificar(texto);
+
+    lugares.forEach(lugar=>{
+      const item=document.createElement("button");
+      item.className="resultado";
+      item.textContent=lugar.display_name;
+
+      item.addEventListener("click",()=>{
+        const punto=[Number(lugar.lon),Number(lugar.lat)];
+        mapa.flyTo({center:punto,zoom:16});
+
+        if(marcadorBusqueda) marcadorBusqueda.remove();
+
+        marcadorBusqueda=new maplibregl.Marker({color:"#1769aa"})
+          .setLngLat(punto)
+          .setPopup(new maplibregl.Popup().setText(lugar.display_name))
+          .addTo(mapa);
+
+        marcadorBusqueda.togglePopup();
+        document.getElementById("origen").value=lugar.display_name;
+        estado("estado","Lugar seleccionado en el mapa.");
+      });
+
+      resultados.appendChild(item);
+    });
+
+    estado("estado","Se encontraron "+lugares.length+" resultado(s).");
+  } catch(e) {
+    estado("estado",e.message||"No se pudo realizar la búsqueda.");
+  } finally {
+    boton.disabled=false;
+    boton.textContent="Buscar en el mapa";
+  }
+}
+
+document.getElementById("buscar").addEventListener("click",buscarLugar);
+document.getElementById("consulta").addEventListener("keydown",e=>{
+  if(e.key==="Enter") buscarLugar();
+});
+
+async function calcularRuta() {
+  const origenTexto=document.getElementById("origen").value.trim();
+  const destinoTexto=document.getElementById("destino").value.trim();
+  const boton=document.getElementById("calcularRuta");
+
+  if(!origenTexto||!destinoTexto) {
+    estado("estadoRuta","Escribe el punto de partida y el destino.");
+    return;
+  }
+
+  boton.disabled=true;
+  boton.textContent="Calculando...";
+  estado("estadoRuta","Buscando los lugares...");
+
+  try {
+    const [origenes,destinos]=await Promise.all([
+      geocodificar(origenTexto),
+      geocodificar(destinoTexto)
+    ]);
+
+    const origen=origenes[0];
+    const destino=destinos[0];
+
+    const url="https://router.project-osrm.org/route/v1/driving/"+
+      origen.lon+","+origen.lat+";"+destino.lon+","+destino.lat+
+      "?overview=full&geometries=geojson";
+
+    const respuesta=await fetch(url);
+    if(!respuesta.ok) throw new Error("El servicio de rutas no respondió.");
+
+    const datos=await respuesta.json();
+
+    if(datos.code!=="Ok"||!datos.routes.length)
+      throw new Error("No se encontró una ruta entre esos lugares.");
+
+    const ruta=datos.routes[0];
+
+    datosRutaActual = {
+      type:"FeatureCollection",
+      features:[{
+        type:"Feature",
+        properties:{},
+        geometry:ruta.geometry
+      }]
+    };
+    mapa.getSource("rutaGeoPeru").setData(datosRutaActual);
+
+    rutaVisible=true;
+    mapa.setLayoutProperty("rutaGeoPeruLinea","visibility","visible");
+    document.getElementById("alternarRuta").textContent="Ocultar ruta";
+
+    const puntos=ruta.geometry.coordinates;
+    const limites=new maplibregl.LngLatBounds(puntos[0],puntos[0]);
+    puntos.forEach(p=>limites.extend(p));
+
+    mapa.fitBounds(limites,{padding:55,maxZoom:15,duration:900});
+
+    estado("estadoRuta",
+      "Distancia aproximada: "+(ruta.distance/1000).toFixed(2)+
+      " km. Tiempo estimado en automóvil: "+
+      Math.round(ruta.duration/60)+
+      " minutos. El tráfico puede variar.");
+  } catch(e) {
+    estado("estadoRuta",e.message||"No se pudo calcular la ruta.");
+  } finally {
+    boton.disabled=false;
+    boton.textContent="Calcular ruta";
+  }
+}
+
+document.getElementById("calcularRuta").addEventListener("click",calcularRuta);
+
+document.getElementById("intercambiar").addEventListener("click",()=>{
+  const origen=document.getElementById("origen");
+  const destino=document.getElementById("destino");
+  [origen.value,destino.value]=[destino.value,origen.value];
+});
+
+document.getElementById("alternarRuta").addEventListener("click",()=>{
+  if(!mapa.getSource("rutaGeoPeru")) {
+    estado("estadoRuta","Primero calcula una ruta.");
+    return;
+  }
+
+  rutaVisible=!rutaVisible;
+  mapa.setLayoutProperty("rutaGeoPeruLinea","visibility",rutaVisible?"visible":"none");
+
+  document.getElementById("alternarRuta").textContent=
+    rutaVisible?"Ocultar ruta":"Mostrar ruta";
+});
+
+document.getElementById("limpiarRuta").addEventListener("click",()=>{
+  datosRutaActual = vacio();
+  if(mapa.getSource("rutaGeoPeru")) {
+    mapa.getSource("rutaGeoPeru").setData(datosRutaActual);
+  }
+
+  estado("estadoRuta","Ruta eliminada.");
+});
+
+document.getElementById("miUbicacion").addEventListener("click",()=>{
+  if(!navigator.geolocation) {
+    estado("estado","Tu navegador no permite obtener la ubicación.");
+    return;
+  }
+
+  estado("estado","Obteniendo tu ubicación...");
+
+  navigator.geolocation.getCurrentPosition(posicion=>{
+    const lon=posicion.coords.longitude;
+    const lat=posicion.coords.latitude;
+
+    mapa.flyTo({center:[lon,lat],zoom:15});
+
+    if(marcadorGPS) marcadorGPS.remove();
+
+    marcadorGPS=new maplibregl.Marker({color:"#087443"})
+      .setLngLat([lon,lat])
+      .setPopup(new maplibregl.Popup().setText("Tu ubicación actual"))
+      .addTo(mapa);
+
+    marcadorGPS.togglePopup();
+
+    document.getElementById("origen").value=lat.toFixed(6)+", "+lon.toFixed(6);
+    estado("estado","Tu ubicación se muestra en el mapa.");
+  },error=>{
+    let mensaje="No se pudo obtener tu ubicación.";
+
+    if(error.code===1) mensaje="Permite el acceso a la ubicación en el navegador.";
+    if(error.code===2) mensaje="La ubicación no está disponible.";
+    if(error.code===3) mensaje="La solicitud de ubicación tardó demasiado.";
+
+    estado("estado",mensaje);
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:10000});
+});
+
+// Estaciones del Metropolitano.
+// Las coordenadas proceden de la lista inicial del proyecto y deben verificarse.
+const ESTACIONES_METROPOLITANO = [
+{nombre:"Naranjal",coordenadas:[-77.05860,-11.98274]},
+{nombre:"Izaguirre",coordenadas:[-77.05702,-11.98955]},
+{nombre:"Pacífico",coordenadas:[-77.05599,-11.99488]},
+{nombre:"Independencia",coordenadas:[-77.05529,-11.99797]},
+{nombre:"Los Jazmines",coordenadas:[-77.05482,-12.00184]},
+{nombre:"Tomás Valle",coordenadas:[-77.05389,-12.00710]},
+{nombre:"El Milagro",coordenadas:[-77.05294,-12.01130]},
+{nombre:"Honorio Delgado",coordenadas:[-77.05141,-12.01790]},
+{nombre:"UNI",coordenadas:[-77.04998,-12.02336]},
+{nombre:"Parque del Trabajo",coordenadas:[-77.04423,-12.02957]},
+{nombre:"Caquetá",coordenadas:[-77.04364,-12.03653]},
+{nombre:"Ramón Castilla",coordenadas:[-77.04173,-12.04383]},
+{nombre:"Tacna",coordenadas:[-77.03790,-12.04613]},
+{nombre:"Jirón de la Unión",coordenadas:[-77.03408,-12.04847]},
+{nombre:"Colmena",coordenadas:[-77.03287,-12.05226]},
+{nombre:"2 de Mayo",coordenadas:[-77.04276,-12.04640]},
+{nombre:"Quilca",coordenadas:[-77.04226,-12.05220]},
+{nombre:"España",coordenadas:[-77.04179,-12.05764]},
+{nombre:"Estación Central",coordenadas:[-77.03598,-12.05768]},
+{nombre:"Estadio Nacional",coordenadas:[-77.03214,-12.06853]},
+{nombre:"México",coordenadas:[-77.02922,-12.07610]},
+{nombre:"Canadá",coordenadas:[-77.02650,-12.08256]},
+{nombre:"Javier Prado",coordenadas:[-77.02353,-12.08937]},
+{nombre:"Canaval y Moreyra",coordenadas:[-77.02499,-12.09661]},
+{nombre:"Aramburú",coordenadas:[-77.02733,-12.10266]},
+{nombre:"Domingo Orué",coordenadas:[-77.02643,-12.10847]},
+{nombre:"Angamos",coordenadas:[-77.02601,-12.11264]},
+{nombre:"Ricardo Palma",coordenadas:[-77.02593,-12.11896]},
+{nombre:"Benavides",coordenadas:[-77.02420,-12.12519]},
+{nombre:"28 de Julio",coordenadas:[-77.02284,-12.12938]},
+{nombre:"Plaza de Flores",coordenadas:[-77.01876,-12.13609]},
+{nombre:"Balta",coordenadas:[-77.01781,-12.13939]},
+{nombre:"Bulevar",coordenadas:[-77.02011,-12.14839]},
+{nombre:"Escuela Militar",coordenadas:[-77.01897,-12.15977]},
+{nombre:"Terán",coordenadas:[-77.01862,-12.16864]},
+{nombre:"Rosario de Villa",coordenadas:[-77.01511,-12.17302]},
+{nombre:"Matellini",coordenadas:[-77.01044,-12.17826]},
+{nombre:"Las Vegas",coordenadas:[-77.05993,-11.95488]},
+{nombre:"Universidad",coordenadas:[-77.06261,-11.96245]},
+{nombre:"22 de Agosto",coordenadas:[-77.06053,-11.94700]},
+{nombre:"Andrés Belaúnde",coordenadas:[-77.05668,-11.93556]},
+{nombre:"Los Incas",coordenadas:[-77.04827,-11.91585]},
+{nombre:"Terminal Chimpu Ocllo",coordenadas:[-77.03769,-11.89695]}
+];
+
+// Listas parciales de servicios regulares.
+// No representan una lista oficial completa de paradas.
+const SERVICIOS_REGULARES = {
+  A:{
+    nombre:"Regular A",
+    estaciones:[
+      "Naranjal","Izaguirre","Pacífico","Independencia",
+      "Los Jazmines","Tomás Valle","El Milagro","Honorio Delgado",
+      "UNI","Parque del Trabajo","Caquetá","Ramón Castilla",
+      "Tacna","Jirón de la Unión","Colmena","Estación Central"
+    ]
+  },
+  B:{
+    nombre:"Regular B",
+    estaciones:[
+      "Terminal Chimpu Ocllo","Los Incas","Andrés Belaúnde",
+      "22 de Agosto","Universidad","Las Vegas","Naranjal",
+      "Izaguirre","Pacífico","Independencia","Los Jazmines",
+      "Tomás Valle","El Milagro","Honorio Delgado","UNI",
+      "Parque del Trabajo","Caquetá","2 de Mayo","Quilca",
+      "España","Estación Central"
+    ]
+  },
+  C:{
+    nombre:"Regular C",
+    estaciones:[
+      "Ramón Castilla","Tacna","Jirón de la Unión","Colmena",
+      "Estación Central","Estadio Nacional","México","Canadá",
+      "Javier Prado","Canaval y Moreyra","Aramburú","Domingo Orué",
+      "Angamos","Ricardo Palma","Benavides","28 de Julio",
+      "Plaza de Flores","Balta","Bulevar","Escuela Militar",
+      "Terán","Rosario de Villa","Matellini"
+    ]
+  }
+};
+
+const SERVICIOS_EXPRESOS = {
+  "Expreso 1":[
+    "Estación Central","Estadio Nacional","Javier Prado",
+    "Canaval y Moreyra","Angamos","28 de Julio","Balta",
+    "Matellini","Terán"
+  ]
+};
+
+// Marcadores de los puntos de la troncal seleccionada. No se dibujan líneas.
+let marcadoresRutaTroncal = [];
+let estacionOrigenRutaSeleccionada = null;
+
+function quitarPuntosRutaTroncal() {
+  marcadoresRutaTroncal.forEach(m=>m.remove());
+  marcadoresRutaTroncal=[];
+}
+
+function crearIconoBus(color = "#ffffff") {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = '<path fill="' + color + '" d="M12 2c-4.4 0-8 .5-8 4v10c0 1.1.9 2 2 2v2c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-2h6v2c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-2c1.1 0 2-.9 2-2V6c0-3.5-3.6-4-8-4zm-5 2h10c.6 0 1 .4 1 1v4H6V5c0-.6.4-1 1-1zM6 11h12v5H6v-5zm1 4.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm10 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>';
+  return svg;
+}
+
+function mostrarPuntosServicio(nombreServicio, nombresEstaciones, estacionOrigen = null) {
+  quitarPuntosRutaTroncal();
+  estacionOrigenRutaSeleccionada = estacionOrigen || estacionSeleccionada || null;
+  const estaciones=nombresEstaciones
+    .map(nombre=>ESTACIONES_METROPOLITANO.find(e=>e.nombre===nombre))
+    .filter(Boolean);
+
+  if(!estaciones.length) {
+    estado("estadoMetropolitano","No hay puntos con coordenadas guardadas para este servicio.");
+    return;
+  }
+
+  const limites=new maplibregl.LngLatBounds();
+  estaciones.forEach((estacion,indice)=>{
+    const elemento=document.createElement("div");
+    elemento.className="marcador-punto-troncal";
+    elemento.appendChild(crearIconoBus("#ffffff"));
+    elemento.title=estacion.nombre;
+    const popup=new maplibregl.Popup({offset:14}).setHTML(
+      "<strong>"+nombreServicio+"</strong><br>Punto "+(indice+1)+": "+estacion.nombre
+    );
+    const marcador=new maplibregl.Marker({element:elemento})
+      .setLngLat(estacion.coordenadas).setPopup(popup).addTo(mapa);
+    marcadoresRutaTroncal.push(marcador);
+    limites.extend(estacion.coordenadas);
+  });
+
+  document.getElementById("fichaEstacion").classList.remove("visible");
+  document.getElementById("panel").classList.add("oculto");
+  document.getElementById("botonReabrir").classList.add("visible");
+  document.getElementById("botonAtrasRuta").classList.add("visible");
+  mapa.fitBounds(limites,{padding:65,maxZoom:14,duration:800});
+  estado("estadoMetropolitano",nombreServicio+": se muestran "+estaciones.length+" puntos, sin líneas de conexión.");
+}
+
+function obtenerServiciosEstacion(estacion) {
+  const contenedor=document.createElement("div");
+  const lista=document.createElement("div");
+  lista.className="lista-rutas";
+
+  const regulares=Object.values(SERVICIOS_REGULARES)
+    .filter(servicio=>servicio.estaciones.includes(estacion.nombre));
+
+  const expresos=Object.entries(SERVICIOS_EXPRESOS)
+    .filter(([nombre,paradas])=>paradas.includes(estacion.nombre));
+
+  regulares.forEach(servicio=>{
+    const etiqueta=document.createElement("button");
+    etiqueta.type="button";
+    etiqueta.className="etiqueta-ruta";
+    etiqueta.textContent=servicio.nombre;
+    etiqueta.title="Mostrar los puntos de "+servicio.nombre;
+    etiqueta.addEventListener("click",()=>mostrarPuntosServicio(servicio.nombre,servicio.estaciones,estacion));
+    lista.appendChild(etiqueta);
+  });
+
+  expresos.forEach(([nombreServicio,paradas])=>{
+    const etiqueta=document.createElement("button");
+    etiqueta.type="button";
+    etiqueta.className="etiqueta-ruta etiqueta-expreso";
+    etiqueta.textContent=nombreServicio;
+    etiqueta.title="Mostrar los puntos de "+nombreServicio;
+    etiqueta.addEventListener("click",()=>mostrarPuntosServicio(nombreServicio,paradas,estacion));
+    lista.appendChild(etiqueta);
+  });
+
+  if(!lista.children.length) {
+    const mensaje=document.createElement("p");
+    mensaje.textContent="No hay servicios asignados en los datos parciales de GeoPerú.";
+    contenedor.appendChild(mensaje);
+  } else {
+    contenedor.appendChild(lista);
+  }
+
+  const aviso=document.createElement("p");
+  aviso.className="aviso-rutas";
+  aviso.textContent=
+    "Información parcial, no oficial ni exhaustiva. Los servicios, paradas y horarios pueden cambiar. Verifica el recorrido vigente con la ATU antes de viajar.";
+
+  contenedor.appendChild(aviso);
+  return contenedor;
+}
+
+function quitarMarcadoresEstaciones() {
+  marcadoresEstaciones.forEach(m=>m.remove());
+  marcadoresEstaciones=[];
+}
+
+function mostrarEstacionesMetropolitano() {
+  const boton=document.getElementById("botonMetropolitano");
+
+  if(estacionesVisibles) {
+    quitarMarcadoresEstaciones();
+    estacionesVisibles=false;
+    boton.textContent="Mostrar estaciones";
+    estado("estadoMetropolitano","Estaciones ocultas.");
+    document.getElementById("fichaEstacion").classList.remove("visible");
+    return;
+  }
+
+  ESTACIONES_METROPOLITANO.forEach(estacion=>{
+    const punto=document.createElement("button");
+    punto.type="button";
+    punto.className="marcador-metropolitano";
+    punto.appendChild(crearIconoBus("#ffffff"));
+    punto.title=estacion.nombre;
+    punto.setAttribute("aria-label","Ver estación "+estacion.nombre);
+
+    const marcador=new maplibregl.Marker({element:punto})
+      .setLngLat(estacion.coordenadas)
+      .addTo(mapa);
+
+    punto.addEventListener("click",()=>mostrarFichaEstacion(estacion));
+    marcadoresEstaciones.push(marcador);
+  });
+
+  estacionesVisibles=true;
+  boton.textContent="Ocultar estaciones";
+  estado("estadoMetropolitano",
+    "Estaciones mostradas. Pulsa un marcador para abrir su ficha.");
+
+  // Mantener la vista inicial amplia para que se vea la mayor parte de la troncal.
+  const limites=new maplibregl.LngLatBounds();
+  ESTACIONES_METROPOLITANO.forEach(e=>limites.extend(e.coordenadas));
+  mapa.fitBounds(limites,{padding:55,maxZoom:11,duration:900});
+}
+
+document.getElementById("botonMetropolitano")
+  .addEventListener("click",mostrarEstacionesMetropolitano);
+
+function mostrarFichaEstacion(estacion) {
+  estacionSeleccionada=estacion;
+
+  document.getElementById("fichaNombre").textContent=estacion.nombre;
+  document.getElementById("fichaCoordenadas").textContent=
+    estacion.coordenadas[1].toFixed(6)+", "+
+    estacion.coordenadas[0].toFixed(6);
+
+  const esAlimentador=estacion.tipoServicio === "alimentador";
+  document.getElementById("fichaEtiqueta").textContent=
+    esAlimentador ? "Alimentador AN-01" : "Metropolitano";
+  document.getElementById("fichaTipoServicio").textContent=esAlimentador
+    ? "Paradero del alimentador AN-01 · "+(estacion.sentido || "Recorrido")
+    : "Estación del sistema Metropolitano de Lima.";
+  document.getElementById("fichaDescripcion").textContent=estacion.descripcion ||
+    ("Estación "+estacion.nombre+
+    ". Verifica la ubicación y los servicios en los canales oficiales.");
+
+  const fichaRutas=document.getElementById("fichaRutas");
+  fichaRutas.replaceChildren();
+  if(esAlimentador) {
+    const detalle=document.createElement("p");
+    detalle.textContent="AN-01 · Tahuantinsuyo · "+(estacion.sentido || "Recorrido")+
+      ". La información de paraderos es parcial y debe verificarse con la ATU.";
+    fichaRutas.appendChild(detalle);
+  } else {
+    fichaRutas.appendChild(obtenerServiciosEstacion(estacion));
+  }
+
+  document.getElementById("panel").classList.add("oculto");
+  document.getElementById("botonReabrir").classList.remove("visible");
+  document.querySelectorAll(".icono").forEach(b=>b.classList.remove("activo"));
+  document.getElementById("fichaEstacion").classList.add("visible");
+
+  mapa.flyTo({center:estacion.coordenadas,zoom:15,essential:true});
+}
+
+document.getElementById("cerrarFicha").addEventListener("click",()=>{
+  document.getElementById("fichaEstacion").classList.remove("visible");
+});
+
+document.getElementById("botonAtrasRuta").addEventListener("click",()=>{
+  document.getElementById("botonAtrasRuta").classList.remove("visible");
+  quitarPuntosRutaTroncal();
+  if(estacionOrigenRutaSeleccionada) {
+    mostrarFichaEstacion(estacionOrigenRutaSeleccionada);
+  } else {
+    document.getElementById("panel").classList.remove("oculto");
+    document.getElementById("botonReabrir").classList.remove("visible");
+  }
+});
+
+document.getElementById("irEstacion").addEventListener("click",()=>{
+  if(estacionSeleccionada) {
+    mapa.flyTo({center:estacionSeleccionada.coordenadas,zoom:16,essential:true});
+  }
+});
+
+document.getElementById("rutaEstacion").addEventListener("click",()=>{
+  if(!estacionSeleccionada) return;
+
+  document.getElementById("destino").value=
+    estacionSeleccionada.nombre+", Lima, Perú";
+
+  document.getElementById("fichaEstacion").classList.remove("visible");
+  abrirSeccion("rutas");
+
+  estado("estadoRuta",
+    "Destino seleccionado. Escribe el punto de partida y calcula la ruta.");
+});
+
+// Alimentadores del norte.
+// La conexión indicada es informativa y debe verificarse antes de viajar.
+// No se dibujan líneas ni se inventan paraderos.
+const ALIMENTADORES_NORTE = [
+  {codigo:"AN-01",nombre:"Tahuantinsuyo",conexion:"Terminal Naranjal"},
+  {codigo:"AN-02",nombre:"Naranjal",conexion:"Terminal Naranjal"},
+  {codigo:"AN-03",nombre:"Trapiche",conexion:"Estación Universidad"},
+  {codigo:"AN-04",nombre:"Collique",conexion:"Estación Los Incas"},
+  {codigo:"AN-05",nombre:"Payet",conexion:"Terminal Naranjal"},
+  {codigo:"AN-06",nombre:"Puno",conexion:"Terminal Naranjal"},
+  {codigo:"AN-07",nombre:"Belaúnde",conexion:"Terminal Naranjal"},
+  {codigo:"AN-08",nombre:"Milagros de Jesús",conexion:"Terminal Naranjal"},
+  {codigo:"AN-09",nombre:"Carabayllo",conexion:"Terminal Chimpu Ocllo"},
+  {codigo:"AN-10",nombre:"San Juan de Dios",conexion:"Terminal Chimpu Ocllo"},
+  {codigo:"AN-11",nombre:"Universitaria",conexion:"Terminal Chimpu Ocllo"},
+  {codigo:"AN-12",nombre:"Puente Piedra",conexion:"Terminal Naranjal"},
+  {codigo:"AN-13",nombre:"La Ensenada",conexion:"Terminal Naranjal"},
+  {codigo:"AN-14",nombre:"Bertello",conexion:"Terminal Naranjal"},
+  {codigo:"AN-15",nombre:"Los Alisos",conexion:"Terminal Naranjal"},
+  {codigo:"AN-16",nombre:"Los Olivos",conexion:"Terminal Naranjal"},
+  {codigo:"AN-17",nombre:"Antúnez de Mayolo",conexion:"Terminal Naranjal"},
+  {codigo:"AN-18",nombre:"Izaguirre",conexion:"Terminal Naranjal"},
+  {codigo:"AN-19",nombre:"Torre Blanca",conexion:"Terminal Chimpu Ocllo"}
+];
+
+// Paraderos proporcionados por el usuario para AN-01 Tahuantinsuyo.
+// Las coordenadas se guardan en formato [longitud, latitud], como requiere MapLibre.
+const PARADEROS_AN01_IDA = [
+  {nombre:"Terminal Naranjal",coordenadas:[-77.05906576720574,-11.980846734650415]},
+  {nombre:"Huáscar",coordenadas:[-77.05824221195724,-11.97995046427267]},
+  {nombre:"Paracas",coordenadas:[-77.05424016455439,-11.980985923533508]},
+  {nombre:"Cahuide",coordenadas:[-77.05332722560011,-11.982689371504804]},
+  {nombre:"Pisac",coordenadas:[-77.04931306926052,-11.981575253217091]},
+  {nombre:"Quipaypampa",coordenadas:[-77.04734872045645,-11.981727142209804]},
+  {nombre:"Yauri",coordenadas:[-77.04371326872828,-11.981233934243406]},
+  {nombre:"Vilcanota",coordenadas:[-77.04086489975099,-11.980829339692491]},
+  {nombre:"Mascaypacha",coordenadas:[-77.03784724898411,-11.979623193985022]}
+];
+
+const PARADEROS_AN01_VUELTA = [
+  {nombre:"Mascaypacha",coordenadas:[-77.03795186618962,-11.979333361527457]},
+  {nombre:"Casihuallar",coordenadas:[-77.04004757793993,-11.980507676402162]},
+  {nombre:"Yanaoca",coordenadas:[-77.04386293885243,-11.981154032608686]},
+  {nombre:"Huatanay",coordenadas:[-77.04723913323623,-11.981759747295778]},
+  {nombre:"Muquiyauyos",coordenadas:[-77.04994700836508,-11.981680065301822]},
+  {nombre:"Indoamérica",coordenadas:[-77.0534374911691,-11.982645557259898]},
+  {nombre:"Tiahuanaco",coordenadas:[-77.05418965905328,-11.98085838165197]},
+  {nombre:"Túpac Amaru",coordenadas:[-77.05868958790646,-11.979962869305389]},
+  {nombre:"Terminal Naranjal",coordenadas:[-77.05906576720574,-11.980846734650415]}
+];
+
+let marcadoresAN01 = [];
+let AN01Visible = false;
+
+function mostrarRecorridoAN01() {
+  if (!mapa.isStyleLoaded()) {
+    estado("estadoAN01","El mapa todavía está cargando. Inténtalo de nuevo en unos segundos.");
+    return;
+  }
+
+  const boton = document.getElementById("botonAN01");
+  if (AN01Visible) {
+    marcadoresAN01.forEach(m=>m.remove());
+    marcadoresAN01=[];
+    AN01Visible=false;
+    boton.textContent="Mostrar recorrido AN-01 (ida y vuelta)";
+    estado("estadoAN01","Recorrido AN-01 oculto.");
+    return;
+  }
+
+  const limites = new maplibregl.LngLatBounds();
+  const agregarMarcadores = (paraderos, sentido, color) => {
+    paraderos.forEach((paradero, indice) => {
+      const elemento = document.createElement("div");
+      elemento.style.width = "32px";
+      elemento.style.height = "32px";
+      elemento.style.boxSizing = "border-box";
+      elemento.style.padding = "4px";
+      elemento.style.borderRadius = "10px";
+      elemento.style.border = "2px solid white";
+      elemento.style.background = color;
+      elemento.style.boxShadow = "0 2px 8px #0008";
+      elemento.style.display = "flex";
+      elemento.style.alignItems = "center";
+      elemento.style.justifyContent = "center";
+      elemento.title = "AN-01 " + sentido + " · Paradero " + (indice + 1);
+      elemento.appendChild(crearIconoBus("#ffffff"));
+      elemento.setAttribute("role","button");
+      elemento.setAttribute("tabindex","0");
+      elemento.setAttribute("aria-label","Abrir ficha del paradero "+paradero.nombre+
+        " del alimentador AN-01, "+sentido);
+      const marcador = new maplibregl.Marker({element:elemento})
+        .setLngLat(paradero.coordenadas).addTo(mapa);
+      const abrirFicha=()=>mostrarFichaEstacion({
+        nombre:paradero.nombre,
+        coordenadas:paradero.coordenadas,
+        tipoServicio:"alimentador",
+        sentido:sentido,
+        descripcion:"Paradero "+(indice+1)+" del alimentador AN-01 (Tahuantinsuyo), sentido "+
+          sentido.toLowerCase()+". Los datos de recorrido son parciales; verifica la información vigente con la ATU."
+      });
+      elemento.addEventListener("click",abrirFicha);
+      elemento.addEventListener("keydown",e=>{
+        if(e.key==="Enter" || e.key===" "){e.preventDefault();abrirFicha();}
+      });
+      marcadoresAN01.push(marcador);
+      limites.extend(paradero.coordenadas);
+    });
+  };
+
+  agregarMarcadores(PARADEROS_AN01_IDA,"Ida","#087443");
+  agregarMarcadores(PARADEROS_AN01_VUELTA,"Vuelta","#d97706");
+  AN01Visible=true;
+  boton.textContent="Ocultar recorrido AN-01";
+  estado("estadoAN01","Se muestran 9 paraderos de ida y 9 de vuelta, sin líneas entre ellos. Icono verde: ida; naranja: vuelta. Pulsa cada bus para ver su nombre y coordenadas.");
+  mapa.fitBounds(limites,{padding:70,maxZoom:15,duration:900});
+}
+
+document.getElementById("botonAN01").addEventListener("click",mostrarRecorridoAN01);
+
+function dibujarAlimentadores(filtro="") {
+  const lista=document.getElementById("listaAlimentadores");
+  const detalle=document.getElementById("detalleAlimentador");
+  lista.replaceChildren();
+  detalle.style.display="none";
+  detalle.replaceChildren();
+
+  const texto=filtro.trim().toLowerCase();
+
+  const resultados=ALIMENTADORES_NORTE.filter(servicio=>
+    (servicio.codigo+" "+servicio.nombre+" "+servicio.conexion)
+      .toLowerCase().includes(texto)
+  );
+
+  if(!resultados.length) {
+    const mensaje=document.createElement("p");
+    mensaje.textContent="No se encontraron alimentadores.";
+    lista.appendChild(mensaje);
+    return;
+  }
+
+  resultados.forEach(servicio=>{
+    const boton=document.createElement("button");
+    boton.type="button";
+    boton.className="resultado";
+
+    const codigo=document.createElement("span");
+    codigo.className="alimentador-codigo";
+    codigo.textContent=servicio.codigo;
+
+    const nombre=document.createElement("span");
+    nombre.textContent=servicio.nombre;
+
+    const conexion=document.createElement("span");
+    conexion.className="alimentador-conexion";
+    conexion.textContent="Conexión de referencia: "+servicio.conexion;
+
+    boton.append(codigo,nombre,conexion);
+
+    boton.addEventListener("click",()=>{
+      detalle.style.display="block";
+      detalle.replaceChildren();
+
+      const titulo=document.createElement("h3");
+      titulo.textContent=servicio.codigo+" · "+servicio.nombre;
+
+      const conexionDetalle=document.createElement("p");
+      conexionDetalle.textContent=
+        "Estación o terminal de conexión de referencia: "+
+        servicio.conexion+".";
+
+      const aviso=document.createElement("p");
+      aviso.textContent=
+        "Esta ficha no representa el recorrido completo ni confirma todos los paraderos. Comprueba el recorrido vigente con la ATU.";
+
+      if (servicio.codigo === "AN-01") {
+        const botonRecorrido=document.createElement("button");
+        botonRecorrido.type="button";
+        botonRecorrido.className="accion azul";
+        botonRecorrido.textContent="Mostrar paraderos de ida y vuelta en el mapa";
+        botonRecorrido.addEventListener("click",()=>mostrarRecorridoAN01());
+        detalle.appendChild(botonRecorrido);
+      }
+
+      const botonBuscar=document.createElement("button");
+      botonBuscar.type="button";
+      botonBuscar.className="accion secundario";
+      botonBuscar.textContent="Buscar información del servicio";
+
+      botonBuscar.addEventListener("click",()=>{
+        document.getElementById("consulta").value=
+          servicio.codigo+" alimentador "+servicio.nombre+
+          " Metropolitano Lima";
+
+        abrirSeccion("buscar");
+        buscarLugar();
+      });
+
+      detalle.append(titulo,conexionDetalle,aviso,botonBuscar);
+      detalle.scrollIntoView({behavior:"smooth",block:"nearest"});
+    });
+
+    lista.appendChild(boton);
+  });
+}
+
+document.getElementById("buscarAlimentador")
+  .addEventListener("input",e=>dibujarAlimentadores(e.target.value));
+
+dibujarAlimentadores();
+
+window.addEventListener("resize",()=>mapa.resize());
+</script>
+</body>
+</html>
