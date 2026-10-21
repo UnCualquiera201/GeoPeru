@@ -1692,6 +1692,84 @@ onAuthStateChanged(authCuenta,user=>{
 });
 </script>
 
+<!-- BOTÓN PARA ABRIR EL FORMULARIO -->
+<button type="button" id="abrirPropuestaUbicacion">
+  📍 Proponer ubicación
+</button>
+
+<!-- FORMULARIO DE PROPUESTA -->
+<section id="proponerUbicacion" hidden>
+  <h2>📍 Proponer una ubicación</h2>
+  <p>Comparte un lugar para que pueda revisarse antes de publicarlo.</p>
+
+  <form id="formProponerUbicacion">
+    <label for="nombreUbicacion">Nombre del lugar</label>
+    <input
+      id="nombreUbicacion"
+      type="text"
+      maxlength="100"
+      placeholder="Ej. Plaza Mayor de Lima"
+      required
+    >
+
+    <label for="categoriaUbicacion">Categoría</label>
+    <select id="categoriaUbicacion" required>
+      <option value="">Selecciona una categoría</option>
+      <option value="monumento">🏛️ Monumento</option>
+      <option value="transporte">🚌 Transporte</option>
+      <option value="restaurante">🍽️ Restaurante</option>
+      <option value="parque">🌳 Parque</option>
+      <option value="iglesia">⛪ Iglesia</option>
+      <option value="comercio">🛍️ Comercio</option>
+      <option value="turismo">📸 Turismo</option>
+      <option value="otro">📍 Otro lugar</option>
+    </select>
+
+    <label for="emojiUbicacion">Emoji del marcador</label>
+    <select id="emojiUbicacion" required>
+      <option value="📍">📍 Ubicación</option>
+      <option value="🏛️">🏛️ Monumento</option>
+      <option value="🚌">🚌 Transporte</option>
+      <option value="🚉">🚉 Estación</option>
+      <option value="🍽️">🍽️ Restaurante</option>
+      <option value="🌳">🌳 Parque</option>
+      <option value="⛪">⛪ Iglesia</option>
+      <option value="🏥">🏥 Hospital</option>
+      <option value="🏫">🏫 Centro educativo</option>
+      <option value="🛍️">🛍️ Comercio</option>
+      <option value="📸">📸 Lugar turístico</option>
+      <option value="🏟️">🏟️ Estadio</option>
+      <option value="⛽">⛽ Gasolinera</option>
+    </select>
+
+    <label for="descripcionUbicacion">Descripción</label>
+    <textarea
+      id="descripcionUbicacion"
+      maxlength="500"
+      rows="3"
+      placeholder="Describe brevemente el lugar"
+      required
+    ></textarea>
+
+    <button type="button" id="elegirPuntoUbicacion">
+      Elegir punto en el mapa
+    </button>
+
+    <p id="coordenadasUbicacion">Todavía no has elegido un punto.</p>
+    <p>Tu propuesta quedará pendiente de aprobación.</p>
+
+    <button type="submit" id="enviarPropuestaUbicacion">
+      Enviar propuesta
+    </button>
+
+    <button type="button" id="cerrarPropuestaUbicacion">
+      Cancelar
+    </button>
+
+    <p id="estadoPropuestaUbicacion" role="status"></p>
+  </form>
+</section>
+
 <script>
 (function () {
   function iniciarFormularioUbicacion() {
