@@ -1901,6 +1901,7 @@ document.getElementById("recargarPropuestas")?.addEventListener(
   document.getElementById("perfilRol").textContent = "Rol: " + (data.role === "admin" ? "Administrador" : "Usuario");
   adminPanel.classList.toggle("visible",data.role === "admin");
   if(data.role === "admin") await cargarUsuariosAdmin();
+  if (data.role === "admin") await cargarPropuestasAdmin();
 }
 
 async function cargarUsuariosAdmin() {
