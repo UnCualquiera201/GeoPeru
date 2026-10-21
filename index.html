@@ -338,31 +338,145 @@ function marcarFuenteGeoVista(fuente) {
   document.getElementById("fuenteGoogleGeoVista").classList.toggle("activa", fuente === "google");
   if (ultimoPuntoGeoVista) cargarGeoVistaEn(ultimoPuntoGeoVista.lng, ultimoPuntoGeoVista.lat);
 }
+
 async function buscarImagenMapillary(lng, lat) {
-  if (!MAPILLARY_ACCESS_TOKEN || MAPILLARY_ACCESS_TOKEN.includes("PEGA_AQUI")) {
-    throw new Error("Falta el token de Mapillary en MAPILLARY_ACCESS_TOKEN.");
+  if (
+    !MAPILLARY_ACCESS_TOKEN ||
+    MAPILLARY_ACCESS_TOKEN.includes("PEGA_AQUI")
+  ) {
+    throw new Error("Falta el token de Mapillary.");
   }
-  const dLng = 0.0025, dLat = 0.0025;
-  const url = new URL("https://graph.mapillary.com/images");
-  url.searchParams.set("access_token", MAPILLARY_ACCESS_TOKEN);
-  url.searchParams.set("fields", "id,geometry");
-  url.searchParams.set("bbox", [lng-dLng, lat-dLat, lng+dLng, lat+dLat].join(","));
-  url.searchParams.set("limit", "20");
-  const respuesta = await fetch(url.toString());
-  if (!respuesta.ok) {
-    let detalle = "";
-    try { const json = await respuesta.json(); detalle = json.error?.message || ""; } catch (_) {}
-    throw new Error(detalle || `Mapillary respondió ${respuesta.status}.`);
+
+  // Estado compartido: caché, solicitudes pendientes y cola.
+  const estado = buscarImagenMapillary.estado ||= {
+    cache: new Map(),
+    pendientes: new Map(),
+    cola: Promise.resolve(),
+    ultimoInicio: 0
+  };
+
+  // Evita repetir búsquedas para puntos prácticamente iguales.
+  const clave = `${lng.toFixed(4)},${lat.toFixed(4)}`;
+  const ahora = Date.now();
+  const guardado = estado.cache.get(clave);
+
+  if (guardado && guardado.vence > ahora) {
+    if (guardado.error) throw new Error(guardado.error);
+    return guardado.imagen;
   }
-  const json = await respuesta.json();
-  const imagenes = Array.isArray(json.data) ? json.data.filter(x => x.geometry && Array.isArray(x.geometry.coordinates)) : [];
-  if (!imagenes.length) throw new Error("No se encontraron imágenes cercanas en Mapillary.");
-  imagenes.sort((a,b) => {
-    const dist = item => Math.hypot(item.geometry.coordinates[0]-lng, item.geometry.coordinates[1]-lat);
-    return dist(a)-dist(b);
-  });
-  return imagenes[0];
+
+  // Si ya se está consultando ese punto, reutiliza la petición.
+  if (estado.pendientes.has(clave)) {
+    return estado.pendientes.get(clave);
+  }
+
+  const tarea = (async () => {
+    try {
+      // Cola global: como máximo una consulta cada 2 segundos.
+      const ejecutar = estado.cola.then(async () => {
+        const espera = Math.max(
+          0,
+          2000 - (Date.now() - estado.ultimoInicio)
+        );
+
+        if (espera > 0) {
+          await new Promise(resolve => setTimeout(resolve, espera));
+        }
+
+        estado.ultimoInicio = Date.now();
+
+        const dLng = 0.001;
+        const dLat = 0.001;
+
+        const url = new URL("https://graph.mapillary.com/images");
+        url.searchParams.set("access_token", MAPILLARY_ACCESS_TOKEN);
+        url.searchParams.set("fields", "id,geometry");
+        url.searchParams.set(
+          "bbox",
+          [
+            lng - dLng,
+            lat - dLat,
+            lng + dLng,
+            lat + dLat
+          ].join(",")
+        );
+        url.searchParams.set("limit", "5");
+
+        const respuesta = await fetch(url.toString());
+
+        if (!respuesta.ok) {
+          let detalle = "";
+
+          try {
+            const json = await respuesta.json();
+            detalle = json.error?.message || "";
+          } catch (_) {}
+
+          if (respuesta.status === 429) {
+            throw new Error(
+              "Mapillary alcanzó el límite de solicitudes. Espera antes de volver a buscar."
+            );
+          }
+
+          throw new Error(
+            detalle || `Mapillary respondió ${respuesta.status}.`
+          );
+        }
+
+        const json = await respuesta.json();
+
+        const imagenes = Array.isArray(json.data)
+          ? json.data.filter(
+              x =>
+                x.geometry &&
+                Array.isArray(x.geometry.coordinates)
+            )
+          : [];
+
+        if (!imagenes.length) {
+          estado.cache.set(clave, {
+            error: "No se encontraron imágenes cercanas en Mapillary.",
+            vence: Date.now() + 30000
+          });
+
+          throw new Error(
+            "No se encontraron imágenes cercanas en Mapillary."
+          );
+        }
+
+        imagenes.sort((a, b) => {
+          const distancia = item =>
+            Math.hypot(
+              item.geometry.coordinates[0] - lng,
+              item.geometry.coordinates[1] - lat
+            );
+
+          return distancia(a) - distancia(b);
+        });
+
+        const imagen = imagenes[0];
+
+        estado.cache.set(clave, {
+          imagen,
+          vence: Date.now() + 5 * 60 * 1000
+        });
+
+        return imagen;
+      });
+
+      // Un fallo no debe bloquear las siguientes tareas de la cola.
+      estado.cola = ejecutar.catch(() => {});
+
+      return await ejecutar;
+    } finally {
+      estado.pendientes.delete(clave);
+    }
+  })();
+
+  estado.pendientes.set(clave, tarea);
+  return tarea;
 }
+
 function mostrarGoogleStreetView(lng, lat, motivo) {
   if (visorMapillary) { try { visorMapillary.remove(); } catch (_) {} visorMapillary = null; }
   contenedorMapillary.replaceChildren();
