@@ -1572,6 +1572,46 @@ let seleccionandoPuntoPropuesta = false;
 let latitudPropuesta = null;
 let longitudPropuesta = null;
 
+function conectarBotonPunto() {
+  const boton = document.getElementById("elegirPuntoUbicacion");
+  const texto = document.getElementById("coordenadasUbicacion");
+
+  if (!boton || !texto) {
+    console.error("No se encontró el botón o el texto de coordenadas.");
+    return;
+  }
+
+  boton.addEventListener("click", function () {
+    seleccionandoPuntoPropuesta = true;
+    texto.textContent = "Ahora haz clic en un punto del mapa.";
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", conectarBotonPunto);
+} else {
+  conectarBotonPunto();
+}
+
+mapa.on("click", function (evento) {
+  if (!seleccionandoPuntoPropuesta) return;
+
+  latitudPropuesta = evento.lngLat.lat;
+  longitudPropuesta = evento.lngLat.lng;
+  seleccionandoPuntoPropuesta = false;
+
+  const texto = document.getElementById("coordenadasUbicacion");
+
+  if (texto) {
+    texto.textContent =
+      "Punto seleccionado: " +
+      latitudPropuesta.toFixed(6) + ", " +
+      longitudPropuesta.toFixed(6);
+  }
+});
+
+console.log("Selección de puntos preparada.");
+
 const botonElegirPunto = document.getElementById("elegirPuntoUbicacion");
 const textoCoordenadas = document.getElementById("coordenadasUbicacion");
 
