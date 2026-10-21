@@ -105,6 +105,13 @@ button.rojo{background:#b83232}
 
 
 #botonGeoVista{position:fixed;z-index:12;top:56px;right:14px;padding:11px 14px;border:0;border-radius:12px;background:#087443;color:white;font-weight:bold;font-size:13px;box-shadow:0 3px 14px #0004;cursor:pointer}
+#pegmanGeoVista{position:fixed;z-index:18;right:16px;top:154px;width:52px;height:58px;border:2px solid #fff;border-radius:16px;background:#f6c744;color:#263448;box-shadow:0 3px 14px #0005;font-size:27px;cursor:grab;touch-action:none;display:flex;align-items:center;justify-content:center}
+#pegmanGeoVista:active{cursor:grabbing}#pegmanGeoVista.arrastrando{z-index:60;transform:scale(1.08);box-shadow:0 8px 24px #0006}
+.marcador-camara-geovista{width:44px;height:44px;border:3px solid white;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);background:#f6c744;box-shadow:0 2px 10px #0007;display:flex;align-items:center;justify-content:center;cursor:grab}
+.marcador-camara-geovista span{transform:rotate(45deg);font-size:23px}
+#fuentesGeoVista{display:flex;gap:6px;align-items:center}
+#fuentesGeoVista button{border:0;border-radius:8px;padding:8px 10px;background:#e8edf3;color:#263448;font-size:12px;font-weight:bold;cursor:pointer}
+#fuentesGeoVista button.activa{background:#087443;color:#fff}
 #panelGeoVista{display:none;position:fixed;z-index:40;inset:12px;background:#fff;border-radius:16px;box-shadow:0 8px 35px #0006;overflow:hidden;flex-direction:column}
 #panelGeoVista.visible{display:flex}
 #cabeceraGeoVista{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:#087443;color:white;flex-shrink:0}
@@ -115,7 +122,7 @@ button.rojo{background:#b83232}
 #estadoGeoVista{font-size:12px;line-height:1.4;color:#475569;flex:1;min-width:180px}
 #visorMapillary{position:relative;flex:1;min-height:240px;background:#101820}
 #ayudaGeoVista{padding:8px 12px;font-size:12px;color:#475569;background:#fff;border-top:1px solid #e2e8f0}
-@media(max-width:600px){#botonGeoVista{top:54px;right:10px;padding:9px 10px;font-size:12px}#panelGeoVista{inset:6px;border-radius:12px}#controlesGeoVista{gap:6px;padding:8px}#controlesGeoVista .accion{flex:1;min-width:130px;font-size:12px;padding:9px}#estadoGeoVista{flex-basis:100%;min-width:0}#visorMapillary{min-height:180px}}
+@media(max-width:600px){#botonGeoVista{top:54px;right:10px;padding:9px 10px;font-size:12px}#pegmanGeoVista{top:145px;right:10px;width:48px;height:52px}#panelGeoVista{inset:6px;border-radius:12px}#controlesGeoVista{gap:6px;padding:8px}#controlesGeoVista .accion{flex:1;min-width:130px;font-size:12px;padding:9px}#estadoGeoVista{flex-basis:100%;min-width:0}#visorMapillary{min-height:180px}}
 
 </style>
 </head>
@@ -125,15 +132,17 @@ button.rojo{background:#b83232}
 <div id="marca">🇵🇪 GeoPerú</div>
 <button id="botonSatelite" type="button" aria-pressed="false">🛰️ Satélite</button>
 <button id="botonGeoVista" type="button" aria-expanded="false">🧭 GeoVista</button>
+<button id="pegmanGeoVista" type="button" title="Arrastra la cámara hasta una calle para ver imágenes" aria-label="Arrastrar cámara de GeoVista">📷</button>
 <aside id="panelGeoVista" aria-label="Visor de calles GeoVista">
-  <div id="cabeceraGeoVista"><h2>🧭 GeoVista · Imágenes de Mapillary</h2><button id="botonCerrarGeoVista" type="button" aria-label="Cerrar GeoVista">×</button></div>
+  <div id="cabeceraGeoVista"><h2>🧭 GeoVista · Street View</h2><button id="botonCerrarGeoVista" type="button" aria-label="Cerrar GeoVista">×</button></div>
   <div id="controlesGeoVista">
-    <button class="accion" id="activarSeleccionGeoVista" type="button">📍 Elegir punto del mapa</button>
+    <button class="accion" id="activarSeleccionGeoVista" type="button">📍 Elegir punto</button>
     <button class="accion azul" id="buscarMiUbicacionGeoVista" type="button">Usar centro del mapa</button>
-    <span id="estadoGeoVista" role="status">Abre GeoVista y selecciona un punto del mapa para buscar imágenes cercanas.</span>
+    <div id="fuentesGeoVista" aria-label="Fuente de panorámicas"><button type="button" id="fuenteAutoGeoVista" class="activa">Automático</button><button type="button" id="fuenteMapillaryGeoVista">Mapillary</button><button type="button" id="fuenteGoogleGeoVista">Google</button></div>
+    <span id="estadoGeoVista" role="status">Arrastra la cámara 📷 hasta una calle. GeoVista intentará Mapillary primero y Google como alternativa.</span>
   </div>
-  <div id="visorMapillary"><div style="height:100%;display:flex;align-items:center;justify-content:center;color:white;text-align:center;padding:20px;font-size:14px">Selecciona un punto con cobertura de Mapillary para cargar imágenes de calle.</div></div>
-  <div id="ayudaGeoVista">La cobertura depende de las imágenes que hayan subido los colaboradores de Mapillary. Algunas ubicaciones pueden no tener imágenes.</div>
+  <div id="visorMapillary"><div style="height:100%;display:flex;align-items:center;justify-content:center;color:white;text-align:center;padding:20px;font-size:14px">Arrastra la cámara hasta una calle para buscar una panorámica.</div></div>
+  <div id="ayudaGeoVista">Automático busca primero en Mapillary y, si no encuentra una imagen, intenta Google Street View. También puedes elegir una fuente manualmente. Arrastra la cámara amarilla 📷 hasta una calle; después puedes mover el marcador.</div>
 </aside>
 <button id="botonCuenta" type="button">Iniciar sesión</button>
 <button id="botonAtrasRuta" type="button" aria-label="Volver atrás a la ficha de la estación">← Atras</button>
@@ -285,13 +294,18 @@ const mapa = new maplibregl.Map({
   zoom: 11
 });
 
-// GeoVista integrado con MapillaryJS. Sustituye el texto de abajo por tu Client Access Token.
-const MAPILLARY_ACCESS_TOKEN = "MLY|28510085981952500|b5a5641c00ee26ab74c3744bb1e82a1e";
+// GeoVista híbrido: Mapillary como fuente principal y Google Street View como alternativa.
+// IMPORTANTE: coloca aquí tu token privado de Mapillary en tu archivo local/repositorio; no lo compartas en el chat.
+const MAPILLARY_ACCESS_TOKEN = "PEGA_AQUI_TU_TOKEN_DE_MAPILLARY";
 let visorMapillary = null;
 let seleccionGeoVistaActiva = false;
 let marcadorGeoVista = null;
+let fuenteGeoVista = "auto"; // auto | mapillary | google
+let ultimoPuntoGeoVista = null;
+let peticionGeoVista = 0;
 const panelGeoVista = document.getElementById("panelGeoVista");
 const botonGeoVista = document.getElementById("botonGeoVista");
+const botonCamaraGeoVista = document.getElementById("pegmanGeoVista");
 const estadoGeoVista = document.getElementById("estadoGeoVista");
 const contenedorMapillary = document.getElementById("visorMapillary");
 
@@ -299,7 +313,7 @@ function estadoGeoVistaTexto(mensaje) { estadoGeoVista.textContent = mensaje; }
 function abrirGeoVista() {
   panelGeoVista.classList.add("visible");
   botonGeoVista.setAttribute("aria-expanded", "true");
-  setTimeout(() => { if (visorMapillary && typeof visorMapillary.resize === "function") visorMapillary.resize(); }, 100);
+  if (visorMapillary && typeof visorMapillary.resize === "function") setTimeout(() => visorMapillary && visorMapillary.resize(), 100);
 }
 function cerrarGeoVista() {
   panelGeoVista.classList.remove("visible");
@@ -309,8 +323,114 @@ function cerrarGeoVista() {
   const aviso = document.getElementById("avisoSeleccionGeoVista");
   if (aviso) aviso.remove();
 }
+function mostrarMensajeGeoVista(mensaje) {
+  if (visorMapillary) { try { visorMapillary.remove(); } catch (_) {} visorMapillary = null; }
+  contenedorMapillary.replaceChildren();
+  const aviso = document.createElement("div");
+  aviso.style.cssText = "height:100%;min-height:220px;display:flex;align-items:center;justify-content:center;color:white;background:#101820;text-align:center;padding:24px;font-size:14px;box-sizing:border-box";
+  aviso.textContent = mensaje;
+  contenedorMapillary.appendChild(aviso);
+}
+function marcarFuenteGeoVista(fuente) {
+  fuenteGeoVista = fuente;
+  document.getElementById("fuenteAutoGeoVista").classList.toggle("activa", fuente === "auto");
+  document.getElementById("fuenteMapillaryGeoVista").classList.toggle("activa", fuente === "mapillary");
+  document.getElementById("fuenteGoogleGeoVista").classList.toggle("activa", fuente === "google");
+  if (ultimoPuntoGeoVista) cargarGeoVistaEn(ultimoPuntoGeoVista.lng, ultimoPuntoGeoVista.lat);
+}
+async function buscarImagenMapillary(lng, lat) {
+  if (!MAPILLARY_ACCESS_TOKEN || MAPILLARY_ACCESS_TOKEN.includes("PEGA_AQUI")) {
+    throw new Error("Falta el token de Mapillary en MAPILLARY_ACCESS_TOKEN.");
+  }
+  const dLng = 0.0025, dLat = 0.0025;
+  const url = new URL("https://graph.mapillary.com/images");
+  url.searchParams.set("access_token", MAPILLARY_ACCESS_TOKEN);
+  url.searchParams.set("fields", "id,geometry");
+  url.searchParams.set("bbox", [lng-dLng, lat-dLat, lng+dLng, lat+dLat].join(","));
+  url.searchParams.set("limit", "20");
+  const respuesta = await fetch(url.toString());
+  if (!respuesta.ok) {
+    let detalle = "";
+    try { const json = await respuesta.json(); detalle = json.error?.message || ""; } catch (_) {}
+    throw new Error(detalle || `Mapillary respondió ${respuesta.status}.`);
+  }
+  const json = await respuesta.json();
+  const imagenes = Array.isArray(json.data) ? json.data.filter(x => x.geometry && Array.isArray(x.geometry.coordinates)) : [];
+  if (!imagenes.length) throw new Error("No se encontraron imágenes cercanas en Mapillary.");
+  imagenes.sort((a,b) => {
+    const dist = item => Math.hypot(item.geometry.coordinates[0]-lng, item.geometry.coordinates[1]-lat);
+    return dist(a)-dist(b);
+  });
+  return imagenes[0];
+}
+function mostrarGoogleStreetView(lng, lat, motivo) {
+  if (visorMapillary) { try { visorMapillary.remove(); } catch (_) {} visorMapillary = null; }
+  contenedorMapillary.replaceChildren();
+  const iframe = document.createElement("iframe");
+  const src = new URL("https://maps.google.com/maps");
+  src.searchParams.set("layer", "c");
+  src.searchParams.set("cbll", lat.toFixed(6) + "," + lng.toFixed(6));
+  src.searchParams.set("cbp", "12,0,,0,0");
+  src.searchParams.set("output", "svembed");
+  iframe.title = "Google Street View de la ubicación seleccionada";
+  iframe.src = src.toString();
+  iframe.allowFullscreen = true;
+  iframe.loading = "eager";
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.style.cssText = "width:100%;height:100%;min-height:240px;border:0;display:block;background:#101820";
+  iframe.addEventListener("load", () => {
+    estadoGeoVistaTexto("Se solicitó Google Street View. Si no aparece la panorámica, Google puede no tener cobertura o no admitir este método sin clave.");
+  }, { once: true });
+  contenedorMapillary.appendChild(iframe);
+  if (motivo) estadoGeoVistaTexto(motivo + " Intentando Google Street View…");
+}
+async function mostrarMapillary(lng, lat, idPeticion) {
+  estadoGeoVistaTexto("Buscando imágenes cercanas en Mapillary…");
+  const imagen = await buscarImagenMapillary(lng, lat);
+  if (idPeticion !== peticionGeoVista) return;
+  if (!window.mapillary || !window.mapillary.Viewer) throw new Error("No se pudo cargar la biblioteca MapillaryJS.");
+  if (visorMapillary) { try { visorMapillary.remove(); } catch (_) {} visorMapillary = null; }
+  contenedorMapillary.replaceChildren();
+  visorMapillary = new window.mapillary.Viewer({
+    accessToken: MAPILLARY_ACCESS_TOKEN,
+    container: contenedorMapillary,
+    imageId: String(imagen.id),
+    component: { cover: false }
+  });
+  estadoGeoVistaTexto("Se encontró una imagen en Mapillary. Cargando panorámica…");
+}
+async function cargarGeoVistaEn(lng, lat) {
+  ultimoPuntoGeoVista = {lng, lat};
+  abrirGeoVista();
+  const idPeticion = ++peticionGeoVista;
+  if (fuenteGeoVista === "google") {
+    mostrarGoogleStreetView(lng, lat, "Fuente elegida: Google Street View.");
+  } else if (fuenteGeoVista === "mapillary") {
+    try { await mostrarMapillary(lng, lat, idPeticion); }
+    catch (error) { if (idPeticion === peticionGeoVista) mostrarMensajeGeoVista("Mapillary no pudo mostrar una panorámica: " + error.message); estadoGeoVistaTexto("Mapillary: " + error.message); }
+  } else {
+    try { await mostrarMapillary(lng, lat, idPeticion); }
+    catch (error) {
+      if (idPeticion !== peticionGeoVista) return;
+      mostrarGoogleStreetView(lng, lat, "Mapillary no encontró una imagen o no pudo cargarla (" + error.message + ").");
+    }
+  }
+  if (marcadorGeoVista) marcadorGeoVista.setLngLat([lng,lat]);
+  else crearMarcadorCamaraGeoVista(lng, lat);
+}
+function crearMarcadorCamaraGeoVista(lng, lat) {
+  const el = document.createElement("div");
+  el.className = "marcador-camara-geovista";
+  el.innerHTML = "<span>📷</span>";
+  el.title = "Arrastra la cámara para cambiar de ubicación";
+  marcadorGeoVista = new maplibregl.Marker({element: el, draggable: true, anchor: "bottom"})
+    .setLngLat([lng,lat]).addTo(mapa);
+  marcadorGeoVista.on("dragend", () => {
+    const pos = marcadorGeoVista.getLngLat();
+    cargarGeoVistaEn(pos.lng, pos.lat);
+  });
+}
 function activarSeleccionGeoVista() {
-  // Ocultamos temporalmente el visor para que el mapa quede libre y puedas elegir el punto.
   panelGeoVista.classList.remove("visible");
   botonGeoVista.setAttribute("aria-expanded", "false");
   seleccionGeoVistaActiva = true;
@@ -319,69 +439,37 @@ function activarSeleccionGeoVista() {
   if (aviso) aviso.remove();
   const avisoNuevo = document.createElement("div");
   avisoNuevo.id = "avisoSeleccionGeoVista";
-  avisoNuevo.textContent = "GeoVista: haz clic en el mapa para buscar imágenes de esa zona.";
+  avisoNuevo.textContent = "GeoVista: haz clic en una calle para colocar la cámara.";
   avisoNuevo.style.cssText = "position:fixed;z-index:35;top:108px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 24px);padding:11px 14px;border-radius:10px;background:#087443;color:white;font:13px Arial,sans-serif;box-shadow:0 3px 14px #0004;text-align:center";
   document.body.appendChild(avisoNuevo);
 }
-function inicializarVisorMapillary() {
-  if (visorMapillary) return visorMapillary;
-  if (!window.mapillary || !window.mapillary.Viewer) throw new Error("No se pudo cargar la biblioteca MapillaryJS. Recarga la página e inténtalo de nuevo.");
-  visorMapillary = new window.mapillary.Viewer({
-    accessToken: MAPILLARY_ACCESS_TOKEN,
-    container: "visorMapillary",
-    component: { cover: false }
-  });
-  return visorMapillary;
-}
-async function buscarImagenMapillary(lng, lat) {
-  if (!MAPILLARY_ACCESS_TOKEN || MAPILLARY_ACCESS_TOKEN === "PEGA_AQUI_TU_TOKEN_DE_MAPILLARY") {
-    throw new Error("Falta configurar el token de Mapillary en la constante MAPILLARY_ACCESS_TOKEN del index.html.");
+// La cámara amarilla se puede arrastrar desde el borde del mapa y soltar sobre cualquier calle.
+let arrastreCamara = null;
+botonCamaraGeoVista.addEventListener("pointerdown", evento => {
+  evento.preventDefault();
+  arrastreCamara = {id: evento.pointerId, offsetX: evento.clientX - botonCamaraGeoVista.getBoundingClientRect().left, offsetY: evento.clientY - botonCamaraGeoVista.getBoundingClientRect().top};
+  botonCamaraGeoVista.classList.add("arrastrando");
+  botonCamaraGeoVista.style.left = (evento.clientX-arrastreCamara.offsetX) + "px";
+  botonCamaraGeoVista.style.top = (evento.clientY-arrastreCamara.offsetY) + "px";
+  botonCamaraGeoVista.style.right = "auto";
+});
+document.addEventListener("pointermove", evento => {
+  if (!arrastreCamara || evento.pointerId !== arrastreCamara.id) return;
+  botonCamaraGeoVista.style.left = (evento.clientX-arrastreCamara.offsetX) + "px";
+  botonCamaraGeoVista.style.top = (evento.clientY-arrastreCamara.offsetY) + "px";
+});
+document.addEventListener("pointerup", evento => {
+  if (!arrastreCamara || evento.pointerId !== arrastreCamara.id) return;
+  const rect = document.getElementById("mapa").getBoundingClientRect();
+  const soltadaEnMapa = evento.clientX >= rect.left && evento.clientX <= rect.right && evento.clientY >= rect.top && evento.clientY <= rect.bottom;
+  arrastreCamara = null;
+  botonCamaraGeoVista.classList.remove("arrastrando");
+  botonCamaraGeoVista.style.left = "auto"; botonCamaraGeoVista.style.top = "154px"; botonCamaraGeoVista.style.right = "16px";
+  if (soltadaEnMapa) {
+    const punto = mapa.unproject([evento.clientX, evento.clientY]);
+    cargarGeoVistaEn(punto.lng, punto.lat);
   }
-  // Consultamos un área pequeña alrededor del punto para evitar solicitudes demasiado grandes.
-  const deltaLng = 0.001;
-  const deltaLat = 0.001;
-  const url = new URL("https://graph.mapillary.com/images");
-  url.searchParams.set("access_token", MAPILLARY_ACCESS_TOKEN);
-  url.searchParams.set("fields", "id,geometry");
-  url.searchParams.set("bbox", [lng-deltaLng,lat-deltaLat,lng+deltaLng,lat+deltaLat].join(","));
-  url.searchParams.set("limit", "10");
-  const respuesta = await fetch(url.toString());
-  const datos = await respuesta.json().catch(() => ({}));
-  if (!respuesta.ok || datos.error) {
-    const detalle = datos && datos.error && datos.error.message ? datos.error.message : "La API de Mapillary no respondió correctamente.";
-    throw new Error(detalle + " Revisa que el token sea correcto y que la aplicación tenga acceso a la API.");
-  }
-  const imagenes = Array.isArray(datos.data) ? datos.data : [];
-  if (!imagenes.length) throw new Error("No encontramos imágenes de Mapillary cerca de ese punto. Prueba otra calle o zona.");
-  const distancia2 = imagen => {
-    const coords = imagen.geometry && imagen.geometry.coordinates;
-    if (!coords || coords.length < 2) return Infinity;
-    const dx = (coords[0] - lng) * Math.cos(lat * Math.PI / 180);
-    const dy = coords[1] - lat;
-    return dx*dx + dy*dy;
-  };
-  imagenes.sort((a,b)=>distancia2(a)-distancia2(b));
-  return {imagen: imagenes[0], total: imagenes.length};
-}
-async function cargarGeoVistaEn(lng, lat) {
-  abrirGeoVista();
-  estadoGeoVistaTexto("Buscando imágenes cercanas en Mapillary…");
-  try {
-    const resultado = await buscarImagenMapillary(lng,lat);
-    const visor = inicializarVisorMapillary();
-    await visor.moveTo(String(resultado.imagen.id));
-    if (marcadorGeoVista) marcadorGeoVista.remove();
-    marcadorGeoVista = new maplibregl.Marker({color:"#087443"}).setLngLat([lng,lat]).addTo(mapa);
-    estadoGeoVistaTexto("Imagen cargada. Encontramos "+resultado.total+" imagen(es) en el área; se muestra la más cercana al punto elegido.");
-    setTimeout(()=>{if(visorMapillary)visorMapillary.resize();},150);
-  } catch(error) {
-    estadoGeoVistaTexto(error.message || "No se pudo cargar GeoVista.");
-    contenedorMapillary.innerHTML = '<div style="height:100%;min-height:220px;display:flex;align-items:center;justify-content:center;color:white;text-align:center;padding:24px;font-size:14px"></div>';
-    contenedorMapillary.firstElementChild.textContent = error.message || "No se pudo cargar GeoVista.";
-    // Si el visor se había creado, conservar su referencia; el contenedor se reconstruirá al volver a intentarlo.
-    if (visorMapillary) { try { visorMapillary.remove(); } catch (_) {} visorMapillary = null; }
-  }
-}
+});
 botonGeoVista.addEventListener("click",()=>panelGeoVista.classList.contains("visible") ? cerrarGeoVista() : abrirGeoVista());
 document.getElementById("botonCerrarGeoVista").addEventListener("click",cerrarGeoVista);
 document.getElementById("activarSeleccionGeoVista").addEventListener("click",activarSeleccionGeoVista);
@@ -389,6 +477,9 @@ document.getElementById("buscarMiUbicacionGeoVista").addEventListener("click",()
   const centro = mapa.getCenter();
   cargarGeoVistaEn(centro.lng, centro.lat);
 });
+document.getElementById("fuenteAutoGeoVista").addEventListener("click",()=>marcarFuenteGeoVista("auto"));
+document.getElementById("fuenteMapillaryGeoVista").addEventListener("click",()=>marcarFuenteGeoVista("mapillary"));
+document.getElementById("fuenteGoogleGeoVista").addEventListener("click",()=>marcarFuenteGeoVista("google"));
 mapa.on("click", evento=>{
   if (!seleccionGeoVistaActiva) return;
   seleccionGeoVistaActiva = false;
@@ -397,7 +488,6 @@ mapa.on("click", evento=>{
   if (aviso) aviso.remove();
   cargarGeoVistaEn(evento.lngLat.lng, evento.lngLat.lat);
 });
-
 
 mapa.addControl(new maplibregl.NavigationControl(), "top-right");
 mapa.addControl(new maplibregl.ScaleControl(), "bottom-right");
@@ -1328,7 +1418,7 @@ document.getElementById("buscarAlimentador")
 
 dibujarAlimentadores();
 
-window.addEventListener("resize",()=>{mapa.resize(); if(visorMapillary && panelGeoVista.classList.contains("visible")) visorMapillary.resize();});
+window.addEventListener("resize",()=>{mapa.resize();});
 </script>
 
 <script type="module">
@@ -1490,4 +1580,3 @@ onAuthStateChanged(authCuenta,user=>{
 
 </body>
 </html>
-
