@@ -48,9 +48,16 @@ button.rojo{background:#b83232}
 #botonReabrir.visible{display:block}
 #botonSatelite{position:fixed;z-index:8;right:14px;top:96px;padding:11px 14px;border:0;border-radius:12px;background:white;color:#172033;font-weight:bold;font-size:13px;box-shadow:0 3px 14px #0004;cursor:pointer}
 #botonSatelite.activo{background:#087443;color:white}
+#botonGeoVista{position:fixed;z-index:8;right:14px;top:48px;padding:11px 14px;border:0;border-radius:12px;background:#087443;color:white;font-weight:bold;font-size:13px;box-shadow:0 3px 14px #0004;cursor:pointer}
+#panelGeoVista{display:none;position:fixed;z-index:30;right:14px;top:94px;width:320px;max-width:calc(100vw - 28px);padding:16px;background:white;border-radius:15px;box-shadow:0 5px 25px #0004}
+#panelGeoVista.visible{display:block}
+#panelGeoVista h2{margin:0 0 8px;font-size:18px;color:#087443}
+#panelGeoVista p{font-size:13px;line-height:1.5;color:#475569}
+#estadoGeoVista{font-size:12px;background:#f1f5f9;border-radius:8px;padding:9px;line-height:1.4}
+#botonCerrarGeoVista{float:right;width:30px;padding:4px;background:#e8edf3;color:#172033;font-size:20px}
 #botonAtrasRuta{display:none;position:fixed;z-index:15;top:14px;left:50%;transform:translateX(-50%);padding:11px 16px;border:0;border-radius:12px;background:white;color:#172033;font-weight:bold;font-size:14px;box-shadow:0 3px 14px #0004;cursor:pointer;white-space:nowrap}
 #botonAtrasRuta.visible{display:block}
-@media(max-width:600px){#botonSatelite{top:88px;right:10px;padding:10px 11px;font-size:12px}}
+@media(max-width:600px){#botonSatelite{top:88px;right:10px;padding:10px 11px;font-size:12px}#botonGeoVista{top:48px;right:10px;padding:9px 10px;font-size:12px}#panelGeoVista{top:92px;right:10px}}
 #fichaEstacion{display:none;position:fixed;z-index:20;top:78px;left:76px;width:340px;max-width:calc(100vw - 92px);max-height:calc(100vh - 96px);overflow-y:auto;background:white;border-radius:16px;box-shadow:0 5px 25px #0003}
 #fichaEstacion.visible{display:block}
 .ficha-imagen{height:100px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#087443,#19a66b);color:white;font-size:48px}
@@ -80,7 +87,7 @@ button.rojo{background:#b83232}
 #fichaEstacion{top:66px;left:64px;width:calc(100vw - 76px);max-width:340px;max-height:calc(100vh - 80px)}
 }
 
-#botonCuenta{position:fixed;z-index:12;top:14px;right:50px;padding:11px 14px;border:0;border-radius:12px;background:#087443;color:white;font-weight:bold;font-size:13px;box-shadow:0 3px 14px #0004;cursor:pointer;max-width:calc(100vw - 150px)}
+#botonCuenta{position:fixed;z-index:12;top:14px;right:14px;padding:11px 14px;border:0;border-radius:12px;background:#087443;color:white;font-weight:bold;font-size:13px;box-shadow:0 3px 14px #0004;cursor:pointer;max-width:calc(100vw - 150px)}
 #modalCuenta{display:none;position:fixed;inset:0;z-index:50;background:#0b1729a8;align-items:center;justify-content:center;padding:16px}
 #modalCuenta.visible{display:flex}
 .cuenta-tarjeta{width:100%;max-width:410px;max-height:calc(100vh - 32px);overflow:auto;background:white;border-radius:18px;box-shadow:0 12px 40px #0005;padding:22px}
@@ -108,6 +115,16 @@ button.rojo{background:#b83232}
 <div id="mapa"></div>
 <div id="marca">🇵🇪 GeoPerú</div>
 <button id="botonSatelite" type="button" aria-pressed="false">🛰️ Satélite</button>
+<button id="botonGeoVista" type="button" aria-expanded="false">🧭 GeoVista</button>
+<aside id="panelGeoVista" aria-label="Exploración panorámica GeoVista">
+  <button id="botonCerrarGeoVista" type="button" aria-label="Cerrar GeoVista">×</button>
+  <h2>🧭 GeoVista</h2>
+  <p>Explora imágenes a nivel de calle. Pulsa el botón y después selecciona un punto del mapa para abrir la cobertura disponible.</p>
+  <button class="accion" id="seleccionarGoogle" type="button">Explorar con Google Street View</button>
+  <button class="accion azul" id="seleccionarMapillary" type="button">Buscar imágenes en Mapillary</button>
+  <button class="accion secundario" id="cancelarGeoVista" type="button">Cancelar selección</button>
+  <div id="estadoGeoVista" role="status">Elige un proveedor para empezar. La cobertura depende de cada ubicación.</div>
+</aside>
 <button id="botonCuenta" type="button">Iniciar sesión</button>
 <button id="botonAtrasRuta" type="button" aria-label="Volver atrás a la ficha de la estación">← Atras</button>
 
@@ -256,6 +273,52 @@ const mapa = new maplibregl.Map({
   style: "https://tiles.openfreemap.org/styles/liberty",
   center: CENTRO_LIMA,
   zoom: 11
+});
+
+// GeoVista: selección de un punto y apertura del proveedor panorámico elegido.
+let proveedorGeoVista = null;
+let marcadorGeoVista = null;
+const panelGeoVista = document.getElementById("panelGeoVista");
+const botonGeoVista = document.getElementById("botonGeoVista");
+const estadoGeoVista = document.getElementById("estadoGeoVista");
+function cerrarSeleccionGeoVista(mensaje = "Selección cancelada.") {
+  proveedorGeoVista = null;
+  mapa.getCanvas().style.cursor = "";
+  estadoGeoVista.textContent = mensaje;
+}
+function iniciarSeleccionGeoVista(proveedor) {
+  proveedorGeoVista = proveedor;
+  mapa.getCanvas().style.cursor = "crosshair";
+  estadoGeoVista.textContent = "Ahora haz clic en el punto de la calle que quieres explorar.";
+}
+botonGeoVista.addEventListener("click", () => {
+  const visible = panelGeoVista.classList.toggle("visible");
+  botonGeoVista.setAttribute("aria-expanded", String(visible));
+  if (!visible) cerrarSeleccionGeoVista();
+});
+document.getElementById("botonCerrarGeoVista").addEventListener("click", () => {
+  panelGeoVista.classList.remove("visible");
+  botonGeoVista.setAttribute("aria-expanded", "false");
+  cerrarSeleccionGeoVista();
+});
+document.getElementById("cancelarGeoVista").addEventListener("click", () => cerrarSeleccionGeoVista());
+document.getElementById("seleccionarGoogle").addEventListener("click", () => iniciarSeleccionGeoVista("google"));
+document.getElementById("seleccionarMapillary").addEventListener("click", () => iniciarSeleccionGeoVista("mapillary"));
+mapa.on("click", (evento) => {
+  if (!proveedorGeoVista) return;
+  const proveedor = proveedorGeoVista;
+  const lat = evento.lngLat.lat;
+  const lng = evento.lngLat.lng;
+  cerrarSeleccionGeoVista("Punto seleccionado: " + lat.toFixed(5) + ", " + lng.toFixed(5) + ". Abriendo proveedor en otra pestaña…");
+  if (marcadorGeoVista) marcadorGeoVista.remove();
+  marcadorGeoVista = new maplibregl.Marker({color: "#087443"}).setLngLat([lng, lat]).addTo(mapa);
+  let url;
+  if (proveedor === "google") {
+    url = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=" + encodeURIComponent(lat + "," + lng);
+  } else {
+    url = "https://www.mapillary.com/app/?lat=" + encodeURIComponent(lat) + "&lng=" + encodeURIComponent(lng) + "&z=17";
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
 });
 
 mapa.addControl(new maplibregl.NavigationControl(), "top-right");
