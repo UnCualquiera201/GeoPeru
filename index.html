@@ -2112,6 +2112,8 @@ function mostrarUbicacionesPublicas(ubicaciones) {
     ubicacionFicha.descripcion;
 
   document.getElementById("fichaRutas").replaceChildren();
+  document.getElementById("tituloRutasFicha").textContent =
+  "🚌 Rutas que paran cerca de aquí";
 
   document.getElementById("panel").classList.add("oculto");
   document.getElementById("botonReabrir").classList.remove("visible");
