@@ -2085,18 +2085,44 @@ function mostrarUbicacionesPublicas(ubicaciones) {
   const ubicacionFicha = {
     nombre: ubicacion.nombre || "Ubicación",
     coordenadas: [lng, lat],
-    tipoServicio: "ubicacionPublica",
-    categoria: ubicacion.categoria || "Lugar",
-    descripcion: ubicacion.descripcion || ""
+    descripcion: ubicacion.descripcion || "",
+    emoji: ubicacion.emoji || "📍",
+    categoria: ubicacion.categoria || "Lugar"
   };
 
-  mostrarFichaEstacion(ubicacionFicha);
+  estacionSeleccionada = ubicacionFicha;
+
+  document.getElementById("fichaNombre").textContent =
+    ubicacionFicha.nombre;
+
+  document.getElementById("fichaCoordenadas").textContent =
+    lat.toFixed(6) + ", " + lng.toFixed(6);
 
   document.getElementById("fichaEtiqueta").textContent =
-    ubicacionFicha.categoria;
+    ubicacionFicha.emoji + " " + ubicacionFicha.categoria;
 
   document.getElementById("fichaTipoServicio").textContent =
     "Ubicación pública de GeoPerú";
+
+  document.getElementById("fichaDescripcion").textContent =
+    ubicacionFicha.descripcion;
+
+  document.getElementById("fichaRutas").replaceChildren();
+
+  document.getElementById("panel").classList.add("oculto");
+  document.getElementById("botonReabrir").classList.remove("visible");
+
+  document.querySelectorAll(".icono").forEach(b =>
+    b.classList.remove("activo")
+  );
+
+  document.getElementById("fichaEstacion").classList.add("visible");
+
+  mapa.flyTo({
+    center: [lng, lat],
+    zoom: 16,
+    essential: true
+  });
 });
       marcadoresUbicacionesPublicas.set(id, elemento);
     } else {
