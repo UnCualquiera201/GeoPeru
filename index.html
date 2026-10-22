@@ -2078,7 +2078,26 @@ function mostrarUbicacionesPublicas(ubicaciones) {
         .setLngLat([lng, lat])
         .setPopup(popup)
         .addTo(mapa);
+      
+      contenido.addEventListener("click", (evento) => {
+  evento.stopPropagation();
 
+  const ubicacionFicha = {
+    nombre: ubicacion.nombre || "Ubicación",
+    coordenadas: [lng, lat],
+    tipoServicio: "ubicacionPublica",
+    categoria: ubicacion.categoria || "Lugar",
+    descripcion: ubicacion.descripcion || ""
+  };
+
+  mostrarFichaEstacion(ubicacionFicha);
+
+  document.getElementById("fichaEtiqueta").textContent =
+    ubicacionFicha.categoria;
+
+  document.getElementById("fichaTipoServicio").textContent =
+    "Ubicación pública de GeoPerú";
+});
       marcadoresUbicacionesPublicas.set(id, elemento);
     } else {
       elemento.setLngLat([lng, lat]);
