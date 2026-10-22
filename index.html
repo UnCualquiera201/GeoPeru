@@ -2092,6 +2092,9 @@ function mostrarUbicacionesPublicas(ubicaciones) {
 
   estacionSeleccionada = ubicacionFicha;
 
+  document.getElementById("fichaImagen").textContent =
+  ubicacionFicha.emoji;
+
   document.getElementById("fichaNombre").textContent =
     ubicacionFicha.nombre;
 
