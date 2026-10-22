@@ -125,20 +125,25 @@ button.rojo{background:#b83232}
 @media(max-width:600px){#botonGeoVista{top:54px;right:10px;padding:9px 10px;font-size:12px}#pegmanGeoVista{top:145px;right:10px;width:48px;height:52px}#panelGeoVista{inset:6px;border-radius:12px}#controlesGeoVista{gap:6px;padding:8px}#controlesGeoVista .accion{flex:1;min-width:130px;font-size:12px;padding:9px}#estadoGeoVista{flex-basis:100%;min-width:0}#visorMapillary{min-height:180px}}
 
 #abrirPropuestaUbicacion {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  margin: 0;
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
   z-index: 9999;
-  margin: 300px 12px 12px;
-  padding: 12px 18px;
   background: #167a45;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 24px;
   cursor: pointer;
 }
+  
 #proponerUbicacion {
   position: fixed;
   top: 80px;
