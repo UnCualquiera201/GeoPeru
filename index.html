@@ -551,21 +551,76 @@ function mostrarGoogleStreetView(lng, lat, motivo) {
   contenedorMapillary.appendChild(iframe);
   if (motivo) estadoGeoVistaTexto(motivo + " Intentando Google Street View…");
 }
+
 async function mostrarMapillary(lng, lat, idPeticion) {
   estadoGeoVistaTexto("Buscando imágenes cercanas en Mapillary…");
+
   const imagen = await buscarImagenMapillary(lng, lat);
+
   if (idPeticion !== peticionGeoVista) return;
-  if (!window.mapillary || !window.mapillary.Viewer) throw new Error("No se pudo cargar la biblioteca MapillaryJS.");
-  if (visorMapillary) { try { visorMapillary.remove(); } catch (_) {} visorMapillary = null; }
+
+  if (!window.mapillary || !window.mapillary.Viewer) {
+    throw new Error("No se pudo cargar la biblioteca MapillaryJS.");
+  }
+
+  if (visorMapillary) {
+    try { visorMapillary.remove(); } catch (_) {}
+    visorMapillary = null;
+  }
+
   contenedorMapillary.replaceChildren();
-  visorMapillary = new window.mapillary.Viewer({
+
+  const visorActual = new window.mapillary.Viewer({
     accessToken: MAPILLARY_ACCESS_TOKEN,
     container: contenedorMapillary,
     imageId: String(imagen.id),
     component: { cover: false }
   });
-  estadoGeoVistaTexto("Se encontró una imagen en Mapillary. Cargando panorámica…");
+
+  visorMapillary = visorActual;
+
+  // Sincroniza el marcador cuando cambia la posición en Mapillary.
+  visorActual.on("position", async () => {
+    try {
+      const posicion = await visorActual.getPosition();
+
+      // Ignorar eventos de un visor anterior que ya se cerró.
+      if (visorMapillary !== visorActual || !posicion) return;
+
+      const lngActual = posicion.lng;
+      const latActual = posicion.lat;
+
+      if (
+        !Number.isFinite(lngActual) ||
+        !Number.isFinite(latActual)
+      ) return;
+
+      // Guardar las coordenadas actuales de la panorámica.
+      ultimoPuntoGeoVista = {
+        lng: lngActual,
+        lat: latActual
+      };
+
+      // Mover el marcador del mapa principal sin recargar el visor.
+      if (marcadorGeoVista) {
+        marcadorGeoVista.setLngLat([lngActual, latActual]);
+      } else {
+        crearMarcadorCamaraGeoVista(lngActual, latActual);
+      }
+
+    } catch (error) {
+      console.warn(
+        "No se pudo sincronizar la posición de GeoVista:",
+        error
+      );
+    }
+  });
+
+  estadoGeoVistaTexto(
+    "Se encontro una imagen en Mapillary. Al avanzar por las calles, la cámara del mapa se actualizará."
+  );
 }
+
 async function cargarGeoVistaEn(lng, lat) {
   ultimoPuntoGeoVista = {lng, lat};
   abrirGeoVista();
