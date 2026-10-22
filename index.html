@@ -2109,16 +2109,7 @@ function mostrarUbicacionesPublicas(ubicaciones) {
     }
   }
 }
-
-onSnapshot(
-  collection(dbCuenta, "ubicacionesPublicas"),
-  (resultado) => {
-    mostrarUbicacionesPublicas(resultado.docs);
-  },
-  (error) => {
-    console.error("Error leyendo ubicaciones públicas:", error);
-  }
-);
+  
 async function cargarUbicacionesPublicas() {
   try {
     const resultado = await getDocs(
