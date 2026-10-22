@@ -1297,6 +1297,8 @@ document.getElementById("botonMetropolitano")
 
 function mostrarFichaEstacion(estacion) {
   estacionSeleccionada=estacion;
+  document.getElementById("tituloRutasFicha").textContent =
+  "🚌 Rutas que paran aquí";
   document.getElementById("fichaImagen").textContent = "🚌";
 
   document.getElementById("fichaNombre").textContent=estacion.nombre;
