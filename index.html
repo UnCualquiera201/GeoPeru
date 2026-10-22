@@ -2119,7 +2119,25 @@ onSnapshot(
     console.error("Error leyendo ubicaciones públicas:", error);
   }
 );
+async function cargarUbicacionesPublicas() {
+  try {
+    const resultado = await getDocs(
+      collection(dbCuenta, "ubicacionesPublicas")
+    );
 
+    mostrarUbicacionesPublicas(resultado.docs);
+  } catch (error) {
+    console.error("Error cargando ubicaciones públicas:", error);
+  }
+}
+
+if (window.mapa) {
+  if (window.mapa.loaded()) {
+    cargarUbicacionesPublicas();
+  } else {
+    window.mapa.once("load", cargarUbicacionesPublicas);
+  }
+}
 </script>
 
 <!-- BOTÓN PARA ABRIR EL FORMULARIO -->
