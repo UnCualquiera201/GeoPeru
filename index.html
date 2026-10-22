@@ -653,7 +653,7 @@ mapa.on("click", evento=>{
   cargarGeoVistaEn(evento.lngLat.lng, evento.lngLat.lat);
 });
 
-mapa.addControl(new maplibregl.NavigationControl(), "top-right");
+mapa.addControl(new maplibregl.NavigationControl(), "bottom-left");
 mapa.addControl(new maplibregl.ScaleControl(), "bottom-right");
 
 let marcadorBusqueda = null;
