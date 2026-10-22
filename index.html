@@ -2029,6 +2029,97 @@ if (
   });
 }
 
+const marcadoresUbicacionesPublicas = new Map();
+
+function mostrarUbicacionesPublicas(ubicaciones) {
+  const mapa = window.mapa;
+  if (!mapa) {
+    console.error("No se encontró el mapa de GeoPerú.");
+    return;
+  }
+
+  const idsActuales = new Set();
+
+  ubicaciones.forEach((documento) => {
+    const ubicacion = documento.data();
+    const lat = Number(ubicacion.latitud);
+    const lng = Number(ubicacion.longitud);
+
+    if (
+      ubicacion.activa !== true ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 || lat > 90 ||
+      lng < -180 || lng > 180
+    ) {
+      return;
+    }
+
+    const id = documento.id;
+    idsActuales.add(id);
+
+    let elemento = marcadoresUbicacionesPublicas.get(id);
+
+    if (!elemento) {
+      const contenido = document.createElement("div");
+      contenido.style.cssText =
+        "background:white;border:2px solid #16803c;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;box-shadow:0 2px 6px #0005";
+
+      contenido.textContent = ubicacion.emoji || "📍";
+      contenido.title = ubicacion.nombre || "Ubicación aprobada";
+
+      const popup = new maplibregl.Popup({ offset: 22 })
+        .setHTML("");
+
+      elemento = new maplibregl.Marker({
+        element: contenido,
+        anchor: "bottom"
+      })
+        .setLngLat([lng, lat])
+        .setPopup(popup)
+        .addTo(mapa);
+
+      marcadoresUbicacionesPublicas.set(id, elemento);
+    } else {
+      elemento.setLngLat([lng, lat]);
+      elemento.getElement().textContent = ubicacion.emoji || "📍";
+      elemento.getElement().title =
+        ubicacion.nombre || "Ubicación aprobada";
+    }
+
+    const popup = elemento.getPopup();
+
+    const tarjeta = document.createElement("div");
+    const titulo = document.createElement("strong");
+    const descripcion = document.createElement("p");
+
+    titulo.textContent =
+      `${ubicacion.emoji || "📍"} ${ubicacion.nombre || "Ubicación"}`;
+
+    descripcion.textContent = ubicacion.descripcion || "";
+
+    tarjeta.append(titulo, descripcion);
+    popup.setDOMContent(tarjeta);
+  });
+
+  for (const [id, marcador] of marcadoresUbicacionesPublicas) {
+    if (!idsActuales.has(id)) {
+      marcador.remove();
+      marcadoresUbicacionesPublicas.delete(id);
+    }
+  }
+}
+
+onSnapshot(
+  collection(dbCuenta, "ubicacionesPublicas"),
+  (resultado) => {
+    mostrarUbicacionesPublicas(resultado.docs);
+  },
+  (error) => {
+    console.error("Error leyendo ubicaciones públicas:", error);
+  }
+);
+
 </script>
 
 <!-- BOTÓN PARA ABRIR EL FORMULARIO -->
