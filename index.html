@@ -1788,6 +1788,47 @@ function mensajeCuenta(texto, error=false) {
   estadoCuenta.textContent = texto;
   estadoCuenta.classList.toggle("error", error);
 }
+
+recuperarCuenta.addEventListener("click", async () => {
+  const email = correoInput.value.trim().toLowerCase();
+
+  if (!email) {
+    mensajeCuenta(
+      "Escribe tu correo electrónico para recuperar la contraseña.",
+      true
+    );
+    correoInput.focus();
+    return;
+  }
+
+  recuperarCuenta.disabled = true;
+  mensajeCuenta("Enviando correo de recuperación…");
+
+  try {
+    await sendPasswordResetEmail(authCuenta, email);
+
+    mensajeCuenta(
+      "Si existe una cuenta con ese correo, recibirás instrucciones para restablecer tu contraseña. Revisa también el spam."
+    );
+  } catch (error) {
+    const mensajes = {
+      "auth/invalid-email": "El correo electrónico no es válido.",
+      "auth/too-many-requests":
+        "Hubo demasiados intentos. Espera antes de volver a intentarlo.",
+      "auth/network-request-failed":
+        "No se pudo conectar. Comprueba tu conexión a internet."
+    };
+
+    mensajeCuenta(
+      mensajes[error.code] ||
+      "No se pudo enviar el correo. Inténtalo de nuevo más tarde.",
+      true
+    );
+  } finally {
+    recuperarCuenta.disabled = false;
+  }
+});
+
 function cambiarModoCuenta(modo) {
   modoCuenta = modo;
   const registro = modo === "registro";
