@@ -919,14 +919,26 @@ function cerrarPanel() {
 }
 
 document.querySelectorAll(".icono").forEach(boton=>{
-  boton.addEventListener("click",()=>{
-    if(!document.getElementById("panel").classList.contains("oculto") &&
-       boton.classList.contains("activo")) {
-      cerrarPanel();
-    } else {
-      abrirSeccion(boton.dataset.seccion);
-    }
-  });
+  boton.addEventListener("click", async () => {
+  // Guardar y actualizar la ubicación seleccionada.
+  ultimoPuntoGeoVista = {
+    lng: cruce.lng,
+    lat: cruce.lat
+  };
+
+  // Ocultar las opciones de calles.
+  const lista =
+    document.getElementById("crucesCercanosGeoVista") ||
+    document.getElementById("crucesGeoVista");
+
+  if (lista) {
+    lista.replaceChildren();
+    lista.hidden = true;
+  }
+
+  // Volver a abrir el visor en la ubicación elegida.
+  estadoGeoVistaTexto("Calle seleccionada: " + cruce.nombre);
+  await cargarGeoVistaEn(cruce.lng, cruce.lat);
 });
 
 document.getElementById("cerrarPanel").addEventListener("click",cerrarPanel);
