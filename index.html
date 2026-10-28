@@ -2332,16 +2332,11 @@ async function cargarUbicacionesPublicas() {
   }
 }
 
-if (window.mapa) {
-  if (
-    typeof window.mapa.loaded === "function" &&
-    window.mapa.loaded()
-  ) {
+if (typeof mapa !== "undefined" && mapa) {
+  if (mapa.loaded()) {
     cargarUbicacionesPublicas();
-  } else if (typeof window.mapa.once === "function") {
-    window.mapa.once("load", cargarUbicacionesPublicas);
   } else {
-    console.error("GeoPerú: la instancia del mapa no está disponible correctamente.");
+    mapa.once("load", cargarUbicacionesPublicas);
   }
 }
 </script>
