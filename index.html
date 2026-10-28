@@ -614,12 +614,31 @@ async function mostrarMapillary(lng, lat, idPeticion) {
       };
 
       // Mover el marcador del mapa principal sin recargar el visor.
-      if (marcadorGeoVista) {
-        marcadorGeoVista.setLngLat([lngActual, latActual]);
-      } else {
-        crearMarcadorCamaraGeoVista(lngActual, latActual);
-      }
+      function crearMarcadorCamaraGeoVista(lng, lat) {
+  // Si ya existe una camarita, reutilizarla.
+  if (marcadorGeoVista) {
+    marcadorGeoVista.setLngLat([lng, lat]);
+    return;
+  }
 
+  const el = document.createElement("div");
+  el.className = "marcador-camara-geovista";
+  el.innerHTML = "<span>📷</span>";
+  el.title = "Arrastra la cámara para cambiar de ubicación";
+
+  marcadorGeoVista = new maplibregl.Marker({
+    element: el,
+    draggable: true,
+    anchor: "bottom"
+  })
+    .setLngLat([lng, lat])
+    .addTo(mapa);
+
+  marcadorGeoVista.on("dragend", () => {
+    const pos = marcadorGeoVista.getLngLat();
+    cargarGeoVistaEn(pos.lng, pos.lat);
+  });
+}
     } catch (error) {
       console.warn(
         "No se pudo sincronizar la posición de GeoVista:",
