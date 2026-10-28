@@ -2333,10 +2333,15 @@ async function cargarUbicacionesPublicas() {
 }
 
 if (window.mapa) {
-  if (window.mapa.loaded()) {
+  if (
+    typeof window.mapa.loaded === "function" &&
+    window.mapa.loaded()
+  ) {
     cargarUbicacionesPublicas();
-  } else {
+  } else if (typeof window.mapa.once === "function") {
     window.mapa.once("load", cargarUbicacionesPublicas);
+  } else {
+    console.error("GeoPerú: la instancia del mapa no está disponible correctamente.");
   }
 }
 </script>
