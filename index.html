@@ -2621,23 +2621,38 @@ if (botonActualizarGeoVista) {
 
         boton.style.cssText =
           "display:block;width:100%;margin:6px 0;padding:9px;text-align:left;cursor:pointer;";
+       
+       boton.addEventListener("click", async () => {
+       const mapaGeo = window.mapa;
 
-        boton.addEventListener("click", () => {
-          const mapaGeo = window.mapa;
+      // Ocultar las opciones de calles.
+      lista.replaceChildren();
+       lista.hidden = true;
 
-          if (
-            typeof crearMarcadorCamaraGeoVista === "function"
-          ) {
-            crearMarcadorCamaraGeoVista(cruce.lng, cruce.lat);
-          }
+     // Actualizar la posición seleccionada.
+     ultimoPuntoGeoVista = {
+    lng: cruce.lng,
+    lat: cruce.lat
+    };
 
-          if (mapaGeo && typeof mapaGeo.flyTo === "function") {
-            mapaGeo.flyTo({
-              center: [cruce.lng, cruce.lat],
-              zoom: Math.max(mapaGeo.getZoom(), 17),
-              essential: true
-            });
-          }
+  // Centrar el mapa en la calle elegida.
+  if (mapaGeo && typeof mapaGeo.flyTo === "function") {
+    mapaGeo.flyTo({
+      center: [cruce.lng, cruce.lat],
+      zoom: Math.max(mapaGeo.getZoom(), 17),
+      essential: true
+    });
+  }
+
+  // Abrir la vista de calle sin crear otro marcador manualmente.
+  if (typeof cargarGeoVistaEn === "function") {
+    await cargarGeoVistaEn(cruce.lng, cruce.lat);
+  }
+
+  estadoGeoVistaTexto(
+    "Calle seleccionada: " + cruce.nombre
+  );
+});
 
           if (typeof cargarGeoVistaEn === "function") {
             cargarGeoVistaEn(cruce.lng, cruce.lat);
