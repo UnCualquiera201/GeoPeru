@@ -179,11 +179,6 @@ button.rojo{background:#b83232}
   <div id="controlesGeoVista">
     <button class="accion" id="activarSeleccionGeoVista" type="button">📍 Elegir punto</button>
     <button class="accion azul" id="buscarMiUbicacionGeoVista" type="button">Usar centro del mapa</button>
-    <button class="accion" id="actualizarPosicionGeoVista" type="button">
-  📍 Actualizar posición
-</button>
-
-<div id="crucesCercanosGeoVista" hidden></div>
     <div id="fuentesGeoVista" aria-label="Fuente de panorámicas"><button type="button" id="fuenteAutoGeoVista" class="activa">Automático</button><button type="button" id="fuenteMapillaryGeoVista">Mapillary</button><button type="button" id="fuenteGoogleGeoVista">Google</button></div>
     <span id="estadoGeoVista" role="status">Arrastra la cámara 📷 hasta una calle. GeoVista intentará Mapillary primero y Google como alternativa.</span>
   </div>
@@ -550,12 +545,9 @@ function mostrarGoogleStreetView(lng, lat, motivo) {
   iframe.title = "Google Street View de la ubicación seleccionada";
   iframe.src = src.toString();
   iframe.allowFullscreen = true;
-  iframe.setAttribute(
-  "allow",
-  "accelerometer; gyroscope; fullscreen"
-  );
-   iframe.loading = "eager";
-   iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.allow = "accelerometer; gyroscope";
+  iframe.loading = "eager";
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
   iframe.style.cssText = "width:100%;height:100%;min-height:240px;border:0;display:block;background:#101820";
   iframe.addEventListener("load", () => {
     estadoGeoVistaTexto("Se solicitó Google Street View. Si no aparece la panorámica, Google puede no tener cobertura o no admitir este método sin clave.");
@@ -614,31 +606,12 @@ async function mostrarMapillary(lng, lat, idPeticion) {
       };
 
       // Mover el marcador del mapa principal sin recargar el visor.
-      function crearMarcadorCamaraGeoVista(lng, lat) {
-  // Si ya existe una camarita, reutilizarla.
-  if (marcadorGeoVista) {
-    marcadorGeoVista.setLngLat([lng, lat]);
-    return;
-  }
+      if (marcadorGeoVista) {
+        marcadorGeoVista.setLngLat([lngActual, latActual]);
+      } else {
+        crearMarcadorCamaraGeoVista(lngActual, latActual);
+      }
 
-  const el = document.createElement("div");
-  el.className = "marcador-camara-geovista";
-  el.innerHTML = "<span>📷</span>";
-  el.title = "Arrastra la cámara para cambiar de ubicación";
-
-  marcadorGeoVista = new maplibregl.Marker({
-    element: el,
-    draggable: true,
-    anchor: "bottom"
-  })
-    .setLngLat([lng, lat])
-    .addTo(mapa);
-
-  marcadorGeoVista.on("dragend", () => {
-    const pos = marcadorGeoVista.getLngLat();
-    cargarGeoVistaEn(pos.lng, pos.lat);
-  });
-}
     } catch (error) {
       console.warn(
         "No se pudo sincronizar la posición de GeoVista:",
@@ -919,26 +892,14 @@ function cerrarPanel() {
 }
 
 document.querySelectorAll(".icono").forEach(boton=>{
-  boton.addEventListener("click", async () => {
-  // Guardar y actualizar la ubicación seleccionada.
-  ultimoPuntoGeoVista = {
-    lng: cruce.lng,
-    lat: cruce.lat
-  };
-
-  // Ocultar las opciones de calles.
-  const lista =
-    document.getElementById("crucesCercanosGeoVista") ||
-    document.getElementById("crucesGeoVista");
-
-  if (lista) {
-    lista.replaceChildren();
-    lista.hidden = true;
-  }
-
-  // Volver a abrir el visor en la ubicación elegida.
-  estadoGeoVistaTexto("Calle seleccionada: " + cruce.nombre);
-  await cargarGeoVistaEn(cruce.lng, cruce.lat);
+  boton.addEventListener("click",()=>{
+    if(!document.getElementById("panel").classList.contains("oculto") &&
+       boton.classList.contains("activo")) {
+      cerrarPanel();
+    } else {
+      abrirSeccion(boton.dataset.seccion);
+    }
+  });
 });
 
 document.getElementById("cerrarPanel").addEventListener("click",cerrarPanel);
@@ -2332,11 +2293,11 @@ async function cargarUbicacionesPublicas() {
   }
 }
 
-if (typeof mapa !== "undefined" && mapa) {
-  if (mapa.loaded()) {
+if (window.mapa) {
+  if (window.mapa.loaded()) {
     cargarUbicacionesPublicas();
   } else {
-    mapa.once("load", cargarUbicacionesPublicas);
+    window.mapa.once("load", cargarUbicacionesPublicas);
   }
 }
 </script>
@@ -2431,252 +2392,6 @@ document.getElementById("abrirPropuestaUbicacion").onclick = function () {
 document.getElementById("cerrarPropuestaUbicacion").onclick = function () {
   document.getElementById("proponerUbicacion").hidden = true;
 };
-
-function estadoGeoVistaTexto(texto) {
-  const estado = document.getElementById("estadoGeoVista");
-
-  if (estado) {
-    estado.textContent = texto;
-  }
-}
-
-document.getElementById("abrirPropuestaUbicacion").onclick = function () {
-  document.getElementById("proponerUbicacion").hidden = false;
-};
-
-document.getElementById("cerrarPropuestaUbicacion").onclick = function () {
-  document.getElementById("proponerUbicacion").hidden = true;
-};
-
-function estadoGeoVistaTexto(texto) {
-  const estado = document.getElementById("estadoGeoVista");
-  if (estado) estado.textContent = texto;
-}
-
-const botonActualizarGeoVista =
-  document.getElementById("actualizarPosicionGeoVista");
-
-if (botonActualizarGeoVista) {
-  botonActualizarGeoVista.addEventListener("click", async function () {
-    const lista =
-      document.getElementById("crucesCercanosGeoVista") ||
-      document.getElementById("crucesGeoVista");
-
-    if (!lista) {
-      estadoGeoVistaTexto(
-        "No se encontró la lista de resultados de GeoVista."
-      );
-      console.error(
-        "Falta el elemento #crucesCercanosGeoVista o #crucesGeoVista."
-      );
-      return;
-    }
-
-    if (
-      typeof ultimoPuntoGeoVista === "undefined" ||
-      !ultimoPuntoGeoVista
-    ) {
-      estadoGeoVistaTexto(
-        "Primero coloca la camarita en una ubicación del mapa."
-      );
-      return;
-    }
-
-    const { lng, lat } = ultimoPuntoGeoVista;
-
-    lista.hidden = false;
-    lista.replaceChildren();
-
-    const mensaje = document.createElement("p");
-    mensaje.textContent = "Buscando cruces cercanos en OpenStreetMap…";
-    lista.appendChild(mensaje);
-
-    botonActualizarGeoVista.disabled = true;
-
-    try {
-      let elementos = [];
-      let radioUsado = 0;
-
-      for (const radio of [100, 250, 500]) {
-        mensaje.textContent =
-          `Buscando calles con nombre en un radio de ${radio} m…`;
-
-        const consulta = `
-          [out:json][timeout:20];
-          (
-            way(around:${radio},${lat},${lng})["highway"]["name"];
-            node(around:${radio},${lat},${lng})["highway"]["name"];
-          );
-          out center tags;
-        `;
-
-        let respuesta;
-
-        try {
-          respuesta = await fetch(
-            "https://overpass-api.de/api/interpreter",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-              },
-              body: new URLSearchParams({ data: consulta })
-            }
-          );
-        } catch (error) {
-          throw new Error(
-            "No se pudo conectar con OpenStreetMap. Inténtalo de nuevo."
-          );
-        }
-
-        if (!respuesta.ok) {
-          throw new Error(
-            `OpenStreetMap respondió con el error ${respuesta.status}.`
-          );
-        }
-
-        const datos = await respuesta.json();
-        elementos = Array.isArray(datos.elements) ? datos.elements : [];
-        radioUsado = radio;
-
-        if (elementos.length > 0) break;
-      }
-
-      lista.replaceChildren();
-
-      if (elementos.length === 0) {
-        const aviso = document.createElement("p");
-        aviso.textContent =
-          "No se encontraron calles con nombre en los 500 metros cercanos. Prueba moviendo la camarita a otra posición.";
-        lista.appendChild(aviso);
-        estadoGeoVistaTexto("No se encontraron calles cercanas.");
-        return;
-      }
-
-      const titulo = document.createElement("p");
-      titulo.textContent =
-        `Resultados encontrados en un radio de ${radioUsado} m. Elige una calle:`;
-      lista.appendChild(titulo);
-
-      const resultadosUnicos = new Map();
-
-      elementos.forEach((elemento) => {
-        const nombre = elemento.tags && elemento.tags.name;
-        if (!nombre) return;
-
-        let punto;
-
-        if (
-          elemento.type === "node" &&
-          Number.isFinite(elemento.lat) &&
-          Number.isFinite(elemento.lon)
-        ) {
-          punto = { lat: elemento.lat, lng: elemento.lon };
-        } else if (
-          elemento.center &&
-          Number.isFinite(elemento.center.lat) &&
-          Number.isFinite(elemento.center.lon)
-        ) {
-          punto = {
-            lat: elemento.center.lat,
-            lng: elemento.center.lon
-          };
-        }
-
-        if (!punto) return;
-
-        const clave =
-          nombre.toLowerCase() + "|" +
-          punto.lat.toFixed(5) + "|" +
-          punto.lng.toFixed(5);
-
-        if (!resultadosUnicos.has(clave)) {
-          resultadosUnicos.set(clave, { nombre, ...punto });
-        }
-      });
-
-      const resultados = [...resultadosUnicos.values()];
-
-      if (resultados.length === 0) {
-        const aviso = document.createElement("p");
-        aviso.textContent =
-          "Se recibieron datos, pero no se pudieron identificar posiciones válidas.";
-        lista.appendChild(aviso);
-        estadoGeoVistaTexto("No se pudieron interpretar los resultados.");
-        return;
-      }
-
-      resultados.slice(0, 30).forEach((cruce) => {
-        const boton = document.createElement("button");
-        boton.type = "button";
-        boton.textContent =
-          "📍 " + cruce.nombre +
-          " (" + cruce.lat.toFixed(5) + ", " +
-          cruce.lng.toFixed(5) + ")";
-
-        boton.style.cssText =
-          "display:block;width:100%;margin:6px 0;padding:9px;text-align:left;cursor:pointer;";
-       
-         
-boton.addEventListener("click", async () => {
-  const mapaGeo = window.mapa;
-
-  lista.replaceChildren();
-  lista.hidden = true;
-
-  ultimoPuntoGeoVista = {
-    lng: cruce.lng,
-    lat: cruce.lat
-  };
-
-  if (mapaGeo && typeof mapaGeo.flyTo === "function") {
-    mapaGeo.flyTo({
-      center: [cruce.lng, cruce.lat],
-      zoom: Math.max(mapaGeo.getZoom(), 17),
-      essential: true
-    });
-  }
-
-  if (typeof cargarGeoVistaEn === "function") {
-    await cargarGeoVistaEn(cruce.lng, cruce.lat);
-  }
-
-  estadoGeoVistaTexto("Calle seleccionada: " + cruce.nombre);
-});
-
-lista.appendChild(boton);
-
-
-          if (typeof cargarGeoVistaEn === "function") {
-            cargarGeoVistaEn(cruce.lng, cruce.lat);
-          }
-
-          estadoGeoVistaTexto(
-            "Posición seleccionada: " + cruce.nombre
-          );
-        });
-
-        lista.appendChild(boton);
-      });
-
-      estadoGeoVistaTexto(
-        `Se encontraron ${resultados.length} posiciones. Selecciona una para mover la camarita.`
-      );
-    } catch (error) {
-      console.error("Error buscando calles cercanas:", error);
-
-      lista.replaceChildren();
-      const aviso = document.createElement("p");
-      aviso.textContent = error.message ||
-        "No se pudieron consultar los cruces. Inténtalo de nuevo.";
-      lista.appendChild(aviso);
-
-      estadoGeoVistaTexto("No se pudo completar la búsqueda.");
-    } finally {
-      botonActualizarGeoVista.disabled = false;
-    }
-  });
-}
 </script>
   
 </body>
