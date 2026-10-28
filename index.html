@@ -2401,6 +2401,14 @@ document.getElementById("cerrarPropuestaUbicacion").onclick = function () {
   document.getElementById("proponerUbicacion").hidden = true;
 };
 
+function estadoGeoVistaTexto(texto) {
+  const estado = document.getElementById("estadoGeoVista");
+
+  if (estado) {
+    estado.textContent = texto;
+  }
+}
+
 document.getElementById("actualizarPosicionGeoVista")
   ?.addEventListener("click", async () => {
     const lista = document.getElementById("crucesCercanosGeoVista");
@@ -2432,134 +2440,14 @@ document.getElementById("actualizarPosicionGeoVista")
           >;
           out skel qt;
         `;
-
         const respuesta = await fetch(
-          "https://overpass-api.de/api/interpreter",
-          {
-            method: "POST",
-            body: new URLSearchParams({ data: consulta })
-          }
-        );
-
-        if (!respuesta.ok) {
-          throw new Error("OpenStreetMap no respondió correctamente.");
-        }
-
-        const datos = await respuesta.json();
-        const nodos = new Map();
-        const vias = [];
-
-        for (const elemento of datos.elements) {
-          if (elemento.type === "node") {
-            nodos.set(elemento.id, elemento);
-          }
-
-          if (
-            elemento.type === "way" &&
-            elemento.tags?.name &&
-            elemento.nodes
-          ) {
-            vias.push(elemento);
-          }
-        }
-
-        const usos = new Map();
-
-        for (const via of vias) {
-          for (const idNodo of via.nodes) {
-            if (!usos.has(idNodo)) usos.set(idNodo, []);
-            usos.get(idNodo).push(via.tags.name);
-          }
-        }
-
-        const distancia = (a, b) => {
-          const rad = n => n * Math.PI / 180;
-          const dLat = rad(b.lat - a.lat);
-          const dLng = rad(b.lon - a.lon);
-          const h =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos(rad(a.lat)) *
-            Math.cos(rad(b.lat)) *
-            Math.sin(dLng / 2) ** 2;
-
-          return 6371000 * 2 * Math.asin(Math.sqrt(h));
-        };
-
-        cruces = [];
-
-        for (const [idNodo, nombres] of usos) {
-          const nodo = nodos.get(idNodo);
-          if (!nodo || nodo.lat == null || nodo.lon == null) continue;
-
-          const nombresUnicos = [...new Set(nombres)];
-          if (nombresUnicos.length < 2) continue;
-
-          cruces.push({
-            lat: nodo.lat,
-            lng: nodo.lon,
-            nombres: nombresUnicos,
-            distancia: distancia(
-              { lat, lon: lng },
-              { lat: nodo.lat, lon: nodo.lon }
-            )
-          });
-        }
-
-        cruces.sort((a, b) => a.distancia - b.distancia);
-
-        if (cruces.length) break;
-      }
-
-      lista.replaceChildren();
-
-      if (!cruces.length) {
-        estadoGeoVistaTexto(
-          "No se encontraron cruces con nombres registrados cerca. Prueba otra ubicación."
-        );
-        return;
-      }
-
-      estadoGeoVistaTexto(
-        `Se encontraron ${cruces.length} cruces registrados. Elige uno.`
-      );
-
-      for (const cruce of cruces.slice(0, 12)) {
-        const boton = document.createElement("button");
-        boton.type = "button";
-        boton.className = "cruce-opcion";
-        boton.textContent =
-          cruce.nombres.join(" con ") +
-          ` · ${Math.round(cruce.distancia)} m`;
-
-        boton.addEventListener("click", () => {
-          ultimoPuntoGeoVista = {
-            lng: cruce.lng,
-            lat: cruce.lat
-          };
-
-          if (marcadorGeoVista) {
-            marcadorGeoVista.setLngLat([cruce.lng, cruce.lat]);
-          } else {
-            crearMarcadorCamaraGeoVista(cruce.lng, cruce.lat);
-          }
-
-          estadoGeoVistaTexto(
-            `Camarita actualizada: ${cruce.nombres.join(" con ")}.`
-          );
-
-          lista.hidden = true;
-        });
-
-        lista.appendChild(boton);
-      }
-    } catch (error) {
-      console.error("Error buscando cruces:", error);
-      lista.replaceChildren();
-      estadoGeoVistaTexto(
-        "No se pudieron consultar los cruces. Inténtalo de nuevo más tarde."
-      );
-    }
-  });
+  "https://overpass-api.de/api/interpreter",
+  {
+    method: "POST",
+    body: new URLSearchParams({ data: consulta }),
+    signal: AbortSignal.timeout(15000)
+  }
+);
 
 </script>
   
