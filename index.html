@@ -545,9 +545,12 @@ function mostrarGoogleStreetView(lng, lat, motivo) {
   iframe.title = "Google Street View de la ubicación seleccionada";
   iframe.src = src.toString();
   iframe.allowFullscreen = true;
-  iframe.allow = "accelerometer; gyroscope";
-  iframe.loading = "eager";
-  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.setAttribute(
+  "allow",
+  "accelerometer; gyroscope; fullscreen"
+  );
+   iframe.loading = "eager";
+   iframe.referrerPolicy = "strict-origin-when-cross-origin";
   iframe.style.cssText = "width:100%;height:100%;min-height:240px;border:0;display:block;background:#101820";
   iframe.addEventListener("load", () => {
     estadoGeoVistaTexto("Se solicitó Google Street View. Si no aparece la panorámica, Google puede no tener cobertura o no admitir este método sin clave.");
