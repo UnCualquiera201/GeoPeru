@@ -2449,6 +2449,12 @@ document.getElementById("actualizarPosicionGeoVista")
   }
 );
 
+if (!respuesta.ok) {
+  throw new Error("OpenStreetMap no respondió correctamente.");
+}
+
+const datos = await respuesta.json();
+
 </script>
   
 </body>
