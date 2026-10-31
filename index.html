@@ -4,10 +4,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="author" content="GeoPerú">
+<meta name="author" content="Rumbia Maps">
 <meta name="theme-color" content="#167447">
-<title>GeoPerú | Mapa interactivo del Perú</title>
-<meta name="description" content="Explora GeoPerú, un mapa interactivo del Perú con búsqueda de lugares, rutas y estaciones del Metropolitano de Lima. Tu país, tus caminos, tu mapa.">
+<title>Rumbia Maps | Mapa interactivo del Perú</title>
+<meta name="description" content="Explora Rumbia Maps, un mapa interactivo del Perú con búsqueda de lugares, rutas y estaciones. Tu país, tus caminos, tu mapa.">
 <meta name="robots" content="index, follow">
 
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
@@ -169,25 +169,103 @@ button.rojo{background:#b83232}
 #proponerUbicacion[hidden] {
   display: none !important;
 }
+
+#botonTrafico {
+  position: fixed;
+  top: 222px;
+  right: 16px;
+  z-index: 18;
+  width: 52px;
+  height: 42px;
+  padding: 5px;
+  border: 2px solid white;
+  border-radius: 12px;
+  background: #087443;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 3px 14px #0005;
+}
+
+#pantallaTrafico {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: white;
+}
+
+#pantallaTrafico.visible {
+  display: block;
+}
+
+#visorWaze {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+#cerrarTrafico {
+  position: absolute;
+  z-index: 1001;
+  top: 15px;
+  left: 15px;
+  padding: 12px 17px;
+  border: 0;
+  border-radius: 10px;
+  background: #087443;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#quitarMarcadorBusqueda[hidden],
+#quitarMarcadorGeoVista[hidden] {
+  display: none !important;
+}
+
 </style>
 </head>
 <body>
 
 <div id="mapa"></div>
-<div id="marca">🇵🇪 GeoPerú</div>
+
+<div id="pantallaTrafico">
+  <button id="cerrarTrafico" type="button">✕ Volver a Rumbia Maps</button>
+  <iframe
+    id="visorWaze"
+    title="Mapa de tráfico en tiempo real de Waze"
+    allowfullscreen
+    loading="lazy">
+  </iframe>
+</div>
+
+<div id="marca">🇵🇪 Rumbia Maps</div>
 <button id="botonSatelite" type="button" aria-pressed="false">🛰️ Satélite</button>
-<button id="botonGeoVista" type="button" aria-expanded="false">🧭 GeoVista</button>
+<button id="botonTrafico" type="button">🚦 Tráfico</button>
+<button id="botonGeoVista" type="button" aria-expanded="false">🧭 Rumbia Street</button>
 <button id="pegmanGeoVista" type="button" title="Arrastra la cámara hasta una calle para ver imágenes" aria-label="Arrastrar cámara de GeoVista">📷</button>
 <aside id="panelGeoVista" aria-label="Visor de calles GeoVista">
-  <div id="cabeceraGeoVista"><h2>🧭 GeoVista · Street View</h2><button id="botonCerrarGeoVista" type="button" aria-label="Cerrar GeoVista">×</button></div>
+  <div id="cabeceraGeoVista"><h2>🧭 Rumbia Street · Street View/Mapillary </h2><button id="botonCerrarGeoVista" type="button" aria-label="Cerrar GeoVista">×</button></div>
   <div id="controlesGeoVista">
     <button class="accion" id="activarSeleccionGeoVista" type="button">📍 Elegir punto</button>
     <button class="accion azul" id="buscarMiUbicacionGeoVista" type="button">Usar centro del mapa</button>
+    <button class="accion" id="quitarMarcadorGeoVista" type="button" hidden>
+  × Quitar cámara del mapa
+</button>
+    <button class="accion" id="alternarCoberturaMapillary" type="button" aria-pressed="false">
+      🟢 Ver cobertura
+    </button>
     <div id="fuentesGeoVista" aria-label="Fuente de panorámicas"><button type="button" id="fuenteAutoGeoVista" class="activa">Automático</button><button type="button" id="fuenteMapillaryGeoVista">Mapillary</button><button type="button" id="fuenteGoogleGeoVista">Google</button></div>
     <span id="estadoGeoVista" role="status">Arrastra la cámara 📷 hasta una calle. GeoVista intentará Mapillary primero y Google como alternativa.</span>
   </div>
   <div id="visorMapillary"><div style="height:100%;display:flex;align-items:center;justify-content:center;color:white;text-align:center;padding:20px;font-size:14px">Arrastra la cámara hasta una calle para buscar una panorámica.</div></div>
   <div id="ayudaGeoVista">Automático busca primero en Mapillary y, si no encuentra una imagen, intenta Google Street View. También puedes elegir una fuente manualmente. Arrastra la cámara amarilla 📷 hasta una calle; después puedes mover el marcador.</div>
+  <a href="https://www.mapillary.com/" target="_blank" rel="noopener">
+  Datos de cobertura e imágenes © Mapillary
+</a>
 </aside>
 <button id="botonCuenta" type="button">Iniciar sesión</button>
 <button id="botonAtrasRuta" type="button" aria-label="Volver atrás a la ficha de la estación">← Atras</button>
@@ -226,6 +304,9 @@ button.rojo{background:#b83232}
 <h3>Buscar un lugar</h3>
 <input id="consulta" placeholder="Ej.: Plaza de Armas de Lima">
 <button class="accion" id="buscar">Buscar en el mapa</button>
+<button class="accion secundario" id="quitarMarcadorBusqueda" hidden>
+  × Quitar marcador
+</button>
 <div id="resultados"></div>
 </section>
 
@@ -312,9 +393,9 @@ button.rojo{background:#b83232}
 
 <div id="modalCuenta" role="dialog" aria-modal="true" aria-labelledby="tituloCuenta">
   <div class="cuenta-tarjeta">
-    <div class="cuenta-cabecera"><h2 id="tituloCuenta">Cuenta GeoPerú</h2><button id="cerrarCuenta" type="button" aria-label="Cerrar">×</button></div>
+    <div class="cuenta-cabecera"><h2 id="tituloCuenta">Cuenta Rumbia Maps</h2><button id="cerrarCuenta" type="button" aria-label="Cerrar">×</button></div>
     <div id="zonaAcceso">
-      <p style="font-size:13px;color:#596579;line-height:1.5;margin:0">Regístrate o inicia sesión para usar tu cuenta de GeoPerú.</p>
+      <p style="font-size:13px;color:#596579;line-height:1.5;margin:0">Regístrate o inicia sesión para usar tu cuenta de Rumbia Maps.</p>
       <div class="cuenta-tabs"><button type="button" id="tabIngreso" class="activa">Iniciar sesión</button><button type="button" id="tabRegistro">Crear cuenta</button></div>
       <form id="formCuenta">
         <div id="campoUsuario" style="display:none"><label for="nombreUsuario">Nombre de usuario</label><input id="nombreUsuario" autocomplete="username" minlength="3" maxlength="24" placeholder="Ej.: GeoUsuario" /></div>
@@ -353,6 +434,139 @@ const mapa = new maplibregl.Map({
   zoom: 11
 });
 window.mapa = mapa;
+
+// ======================================
+// COBERTURA MAPILLARY DE GEOPERÚ
+// ======================================
+
+let coberturaMapillaryActiva = false;
+
+const botonCoberturaMapillary = document.getElementById(
+  "alternarCoberturaMapillary"
+);
+
+function configurarCoberturaMapillary() {
+
+  // Evitar duplicar la fuente al cambiar de estilo.
+  if (mapa.getSource("mapillary-cobertura")) return;
+
+  mapa.addSource("mapillary-cobertura", {
+    type: "vector",
+    tiles: [
+      "https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}?access_token=" +
+      encodeURIComponent(MAPILLARY_ACCESS_TOKEN)
+    ],
+    minzoom: 6,
+    maxzoom: 14,
+    attribution: "© Mapillary"
+  });
+
+  // Líneas verdes: recorridos fotografiados.
+  mapa.addLayer({
+    id: "mapillary-secuencias",
+    type: "line",
+    source: "mapillary-cobertura",
+    "source-layer": "sequence",
+    minzoom: 6,
+    maxzoom: 24,
+    layout: {
+      visibility: coberturaMapillaryActiva ? "visible" : "none",
+      "line-cap": "round",
+      "line-join": "round"
+    },
+    paint: {
+      "line-color": "#16a34a",
+      "line-width": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        6, 1.5,
+        14, 4
+      ],
+      "line-opacity": 0.85
+    }
+  });
+
+  // Puntos verdes: imágenes individuales.
+  mapa.addLayer({
+    id: "mapillary-imagenes",
+    type: "circle",
+    source: "mapillary-cobertura",
+    "source-layer": "image",
+    minzoom: 14,
+    layout: {
+      visibility: coberturaMapillaryActiva ? "visible" : "none"
+    },
+    paint: {
+      "circle-radius": 4,
+      "circle-color": "#16a34a",
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 1.5
+    }
+  });
+}
+
+// Se ejecuta también cuando GeoPerú cambia de estilo.
+mapa.on("style.load", configurarCoberturaMapillary);
+
+// Activar y desactivar cobertura.
+botonCoberturaMapillary.addEventListener("click", () => {
+
+  coberturaMapillaryActiva = !coberturaMapillaryActiva;
+
+  if (mapa.isStyleLoaded()) {
+    configurarCoberturaMapillary();
+
+    const visibilidad = coberturaMapillaryActiva
+      ? "visible"
+      : "none";
+
+    mapa.setLayoutProperty(
+      "mapillary-secuencias",
+      "visibility",
+      visibilidad
+    );
+
+    mapa.setLayoutProperty(
+      "mapillary-imagenes",
+      "visibility",
+      visibilidad
+    );
+  }
+
+  botonCoberturaMapillary.setAttribute(
+    "aria-pressed",
+    String(coberturaMapillaryActiva)
+  );
+
+  botonCoberturaMapillary.textContent = coberturaMapillaryActiva
+    ? "🔴 Ocultar cobertura"
+    : "🟢 Ver cobertura";
+
+});
+
+const botonTrafico = document.getElementById("botonTrafico");
+const pantallaTrafico = document.getElementById("pantallaTrafico");
+const visorWaze = document.getElementById("visorWaze");
+
+botonTrafico.addEventListener("click", () => {
+  const centro = mapa.getCenter();
+
+  const zoom = Math.max(3, Math.min(17, Math.round(mapa.getZoom())));
+
+  const url =
+    "https://embed.waze.com/es/iframe?zoom=" + zoom +
+    "&lat=" + centro.lat +
+    "&lon=" + centro.lng;
+
+  visorWaze.src = url;
+  pantallaTrafico.classList.add("visible");
+});
+
+document.getElementById("cerrarTrafico").addEventListener("click", () => {
+  pantallaTrafico.classList.remove("visible");
+  visorWaze.src = "about:blank";
+});
 
 // GeoVista híbrido: Mapillary como fuente principal y Google Street View como alternativa.
 // IMPORTANTE: coloca aquí tu token privado de Mapillary en tu archivo local/repositorio; no lo compartas en el chat.
@@ -647,6 +861,20 @@ async function cargarGeoVistaEn(lng, lat) {
   }
   if (marcadorGeoVista) marcadorGeoVista.setLngLat([lng,lat]);
   else crearMarcadorCamaraGeoVista(lng, lat);
+  document.getElementById("quitarMarcadorGeoVista").hidden = false;
+  function quitarMarcadorGeoVista() {
+  if (marcadorGeoVista) {
+    marcadorGeoVista.remove();
+    marcadorGeoVista = null;
+  }
+
+  ultimoPuntoGeoVista = null;
+
+  document.getElementById("quitarMarcadorGeoVista").hidden = true;
+}
+
+document.getElementById("quitarMarcadorGeoVista")
+  .addEventListener("click", quitarMarcadorGeoVista);
 }
 function crearMarcadorCamaraGeoVista(lng, lat) {
   const el = document.createElement("div");
@@ -655,6 +883,7 @@ function crearMarcadorCamaraGeoVista(lng, lat) {
   el.title = "Arrastra la cámara para cambiar de ubicación";
   marcadorGeoVista = new maplibregl.Marker({element: el, draggable: true, anchor: "bottom"})
     .setLngLat([lng,lat]).addTo(mapa);
+  document.getElementById("quitarMarcadorGeoVista").hidden = false;
   marcadorGeoVista.on("dragend", () => {
     const pos = marcadorGeoVista.getLngLat();
     cargarGeoVistaEn(pos.lng, pos.lat);
@@ -721,7 +950,17 @@ mapa.on("click", evento=>{
 
 mapa.addControl(new maplibregl.NavigationControl(), "bottom-left");
 mapa.addControl(new maplibregl.ScaleControl(), "bottom-right");
+function quitarMarcadorBusqueda() {
+  if (marcadorBusqueda) {
+    marcadorBusqueda.remove();
+    marcadorBusqueda = null;
+  }
 
+  document.getElementById("quitarMarcadorBusqueda").hidden = true;
+}
+
+document.getElementById("quitarMarcadorBusqueda")
+  .addEventListener("click", quitarMarcadorBusqueda);
 let marcadorBusqueda = null;
 let marcadorGPS = null;
 let marcadoresEstaciones = [];
@@ -849,26 +1088,48 @@ function vacio() {
 
 mapa.on("load", () => {
   prepararCapaRuta();
-  estado("estado","Mapa cargado correctamente. Estaciones y paraderos cargados en el mapa.");
-  // Mostrar las estaciones del Metropolitano y los paraderos AN-01 al abrir GeoPerú.
+
+  estado(
+    "estado",
+    "Mapa cargado correctamente. Estaciones y paraderos cargados en el mapa."
+  );
+
+  mostrarEstacionesMetroL1();
   mostrarEstacionesMetropolitano();
   mostrarRecorridoAN01();
-  mapa.flyTo({center:CENTRO_LIMA,zoom:10.2,duration:700,essential:true});
+  mostrarRecorridoAN02(null, false);
+  mostrarParaderosAN03();
+  AN03ActualizacionHorario = setInterval(actualizarHorarioAN03, 30000); 
+  setTimeout(() => {
+  mapa.flyTo({
+    center: [-77.0428, -12.0464],
+    zoom: 10.2,
+    duration: 1000,
+    essential: true
+  });
+}, 1000);
+
+  mapa.flyTo({
+    center: CENTRO_LIMA,
+    zoom: 10.2,
+    duration: 700,
+    essential: true
+  });
 });
 
 mapa.on("style.load", () => {
   prepararCapaRuta();
 });
 
-mapa.on("error",e=>console.warn("Error del mapa:",e.error));
+mapa.on("error", e => console.warn("Error del mapa:", e.error));
 
 const NOMBRES_SECCIONES = {
-  buscar:"Buscar un lugar",
-  rutas:"Planificar una ruta",
-  gps:"Mi ubicación",
-  metro:"Estaciones del Metropolitano",
-  alimentadores:"Alimentadores del norte",
-  ajustes:"Ajustes del mapa"
+  buscar: "Buscar un lugar",
+  rutas: "Planificar una ruta",
+  gps: "Mi ubicación",
+  metro: "Estaciones del Metropolitano",
+  alimentadores: "Alimentadores del norte",
+  ajustes: "Ajustes del mapa"
 };
 
 function abrirSeccion(nombre) {
@@ -970,6 +1231,9 @@ async function buscarLugar() {
           .addTo(mapa);
 
         marcadorBusqueda.togglePopup();
+        
+        document.getElementById("quitarMarcadorBusqueda").hidden = false;
+
         document.getElementById("origen").value=lugar.display_name;
         estado("estado","Lugar seleccionado en el mapa.");
       });
@@ -1175,6 +1439,67 @@ const ESTACIONES_METROPOLITANO = [
 {nombre:"Terminal Chimpu Ocllo",coordenadas:[-77.03769,-11.89695]}
 ];
 
+const ESTACIONES_METRO_L1 = [
+    {nombre:"Villa El Salvador", coordenadas:[-76.9334998011783, -12.207075632736993]},
+    {nombre:"Parque Industrial", coordenadas:[-76.94015302107988, -12.196013801455964]},
+    {nombre:"Pumacahua", coordenadas:[-76.94689854953873, -12.182221032646483]},
+    {nombre:"Villa María", coordenadas:[-76.95068527830273, -12.168650784744985]},
+    {nombre:"María Auxiliadora", coordenadas:[-76.95647238690508, -12.160929091060119]},
+    {nombre:"San Juan", coordenadas:[-76.96520213342582, -12.156729282143909]},
+    {nombre:"Atocongo", coordenadas:[-76.97963718934892, -12.151055229005285]},
+    {nombre:"Jorge Chávez", coordenadas:[-76.9911143012772, -12.142479796552543]},
+    {nombre:"Ayacucho", coordenadas:[-76.99694357229068, -12.134768883439124]},
+    {nombre:"Cabitos", coordenadas:[-77.00032460979216, -12.126883048621053]},
+    {nombre:"Angamos", coordenadas:[-77.0003691049992, -12.110413520399508]},
+    {nombre:"San Borja Sur", coordenadas:[-77.0019937359894, -12.101009438533197]},
+    {nombre:"La Cultura", coordenadas:[-77.00372129965704, -12.087067384856514]},
+    {nombre:"Nicolás Arriola", coordenadas:[-77.01108546030474, -12.074944802019152]},
+    {nombre:"Gamarra", coordenadas:[-77.01227137545067, -12.065733744620594]},
+    {nombre:"Miguel Grau", coordenadas:[-77.01281613934204, -12.054228098361316]},
+    {nombre:"El Ángel", coordenadas:[-77.0097074957262, -12.04628991325848]},
+    {nombre:"Presbítero Maestro", coordenadas:[-77.01165145612623, -12.041645575104194]},
+    {nombre:"Caja de Agua", coordenadas:[-77.01121989667269, -12.027939058215624]},
+    {nombre:"Pirámide del Sol", coordenadas:[-77.00279717871517, -12.018258243071166]},
+    {nombre:"Los Jardines", coordenadas:[-77.00559026344298, -12.006761141635979]},
+    {nombre:"Los Postes", coordenadas:[-77.00989558802064, -11.996218221480955]},
+    {nombre:"San Carlos", coordenadas:[-77.0067538601007, -11.985000186821946]},
+    {nombre:"San Martín", coordenadas:[-77.00006407746312, -11.974780951988711]},
+    {nombre:"Santa Rosa", coordenadas:[-76.99354310824195, -11.968199444877115]},
+    {nombre:"Bayóvar", coordenadas:[-76.98755237633961, -11.9597465236338]}
+];
+
+function mostrarEstacionesMetroL1() {
+
+    ESTACIONES_METRO_L1.forEach(estacion => {
+
+        const elemento = document.createElement("div");
+
+  elemento.style.width = "34px";
+  elemento.style.height = "34px";
+  elemento.style.backgroundColor = "#167447";
+  elemento.style.border = "3px solid white";
+  elemento.style.borderRadius = "50%";
+  elemento.style.display = "flex";
+  elemento.style.alignItems = "center";
+  elemento.style.justifyContent = "center";
+  elemento.style.fontSize = "19px";
+  elemento.style.boxShadow = "0 2px 6px rgba(0,0,0,0.4)";
+
+  elemento.textContent = "🚆";
+
+  new maplibregl.Marker({
+    element: elemento,
+    anchor: "center"
+  })
+   .setLngLat(estacion.coordenadas)
+   .setPopup(
+    new maplibregl.Popup({offset: 20})
+    .setText(estacion.nombre + " - Línea 1 del Metro de Lima")
+      )
+       .addTo(mapa);
+    });
+}
+
 // Listas parciales de servicios regulares.
 // No representan una lista oficial completa de paradas.
 const SERVICIOS_REGULARES = {
@@ -1304,7 +1629,7 @@ function obtenerServiciosEstacion(estacion) {
 
   if(!lista.children.length) {
     const mensaje=document.createElement("p");
-    mensaje.textContent="No hay servicios asignados en los datos parciales de GeoPerú.";
+    mensaje.textContent="No hay servicios asignados en los datos parciales de Rumbia Maps.";
     contenedor.appendChild(mensaje);
   } else {
     contenedor.appendChild(lista);
@@ -1377,22 +1702,38 @@ function mostrarFichaEstacion(estacion) {
     estacion.coordenadas[1].toFixed(6)+", "+
     estacion.coordenadas[0].toFixed(6);
 
-  const esAlimentador=estacion.tipoServicio === "alimentador";
-  document.getElementById("fichaEtiqueta").textContent=
-    esAlimentador ? "Alimentador AN-01" : "Metropolitano";
-  document.getElementById("fichaTipoServicio").textContent=esAlimentador
-    ? "Paradero del alimentador AN-01 · "+(estacion.sentido || "Recorrido")
-    : "Estación del sistema Metropolitano de Lima.";
-  document.getElementById("fichaDescripcion").textContent=estacion.descripcion ||
-    ("Estación "+estacion.nombre+
-    ". Verifica la ubicación y los servicios en los canales oficiales.");
+  const esAlimentador = estacion.tipoServicio === "alimentador";
+  const codigoAlimentador = estacion.codigoAlimentador || "AN-01";
+  const nombreAlimentador = estacion.nombreAlimentador ||
+    (codigoAlimentador === "AN-02" ? "Naranjal" : "Tahuantinsuyo");
 
-  const fichaRutas=document.getElementById("fichaRutas");
+  document.getElementById("fichaEtiqueta").textContent =
+    esAlimentador
+      ? "Alimentador " + codigoAlimentador
+      : "Metropolitano";
+
+  document.getElementById("fichaTipoServicio").textContent =
+    esAlimentador
+      ? "Paradero del alimentador " + codigoAlimentador +
+        " · " + (estacion.sentido || "Recorrido")
+      : "Estación del sistema Metropolitano de Lima.";
+
+  document.getElementById("fichaDescripcion").textContent =
+    estacion.descripcion ||
+    ("Estación " + estacion.nombre +
+      ". Verifica la ubicación y los servicios en los canales oficiales.");
+
+  const fichaRutas = document.getElementById("fichaRutas");
   fichaRutas.replaceChildren();
-  if(esAlimentador) {
-    const detalle=document.createElement("p");
-    detalle.textContent="AN-01 · Tahuantinsuyo · "+(estacion.sentido || "Recorrido")+
+
+  if (esAlimentador) {
+    const detalle = document.createElement("p");
+
+    detalle.textContent =
+      codigoAlimentador + " · " + nombreAlimentador + " · " +
+      (estacion.sentido || "Recorrido") +
       ". La información de paraderos es parcial y debe verificarse con la ATU.";
+
     fichaRutas.appendChild(detalle);
   } else {
     fichaRutas.appendChild(obtenerServiciosEstacion(estacion));
@@ -1491,6 +1832,260 @@ const PARADEROS_AN01_VUELTA = [
   {nombre:"Terminal Naranjal",coordenadas:[-77.05906576720574,-11.980846734650415]}
 ];
 
+
+const PARADEROS_AN02_IDA = [
+  {nombre:"Terminal Naranjal",coordenadas:[-77.0589256002591,-11.981836560387844]},
+  {nombre:"Marcara",coordenadas:[-77.0692558556634,-11.977950477519208]},
+  {nombre:"Las Palmeras",coordenadas:[-77.0718427968828,-11.97837722751269]},
+  {nombre:"Universitaria",coordenadas:[-77.0763226509813,-11.978092001872625]},
+  {nombre:"Huandoy",coordenadas:[-77.08263286831678,-11.97664577990705]},
+  {nombre:"Portales de Naranjal",coordenadas:[-77.08636326872197,-11.975240102910496]},
+  {nombre:"Jircan",coordenadas:[-77.0908732126166,-11.970422336516682]},
+  {nombre:"Las Américas",coordenadas:[-77.09231112001136,-11.968851286637582]},
+  {nombre:"Pacasmayo",coordenadas:[-77.09441264098005,-11.966598211690501]},
+  {nombre:"Central",coordenadas:[-77.09681000608762,-11.963980656279077]},
+  {nombre:"Paramonga",coordenadas:[-77.09906613863356,-11.96136519358242]}
+];
+
+const PARADEROS_AN02_VUELTA = [
+  {nombre:"Paramonga",coordenadas:[-77.0991315342814,-11.96161432534963]},
+  {nombre:"Central",coordenadas:[-77.09728881678332,-11.963767517446659]},
+  {nombre:"Pacasmayo",coordenadas:[-77.09486031954825,-11.966401389749914]},
+  {nombre:"Las Américas",coordenadas:[-77.09261695489649,-11.968826708674234]},
+  {nombre:"Jircan",coordenadas:[-77.09122390258176,-11.970342561685687]},
+  {nombre:"Portales de Naranjal",coordenadas:[-77.08677961603588,-11.975085273229839]},
+  {nombre:"Huandoy",coordenadas:[-77.08368484565399,-11.97648618794282]},
+  {nombre:"Universitaria",coordenadas:[-77.07852084968923,-11.97779387654867]},
+  {nombre:"Las Palmeras",coordenadas:[-77.07276955918059,-11.97866652994427]},
+  {nombre:"Marcara",coordenadas:[-77.06899617943539,-11.97796776283621]},
+  {nombre:"Terminal Naranjal",coordenadas:[-77.0589256002591,-11.981836560387844]}
+];
+
+const PARADEROS_AN03_REGULAR_IDA = [
+  {nombre:"Estación Universidad", coordenadas:[-77.0623036152461,-11.962118636853173]},
+  {nombre:"Villasol", coordenadas:[-77.06874184353579,-11.959420806543806]},
+  {nombre:"Yanbal", coordenadas:[-77.06912883832442,-11.957079219802514]},
+  {nombre:"Plaza Vea", coordenadas:[-77.0713494705979,-11.940229495747321]},
+  {nombre:"El Álamo", coordenadas:[-77.06748942383282,-11.929433558064295]}
+];
+
+const PARADEROS_AN03_REGULAR_VUELTA = [
+  {nombre:"El Álamo", coordenadas:[-77.0674745032855,-11.929060211073523]},
+  {nombre:"Segunda de Pro", coordenadas:[-77.07231948141968,-11.932525570663323]},
+  {nombre:"La Amistad", coordenadas:[-77.07202963774809,-11.935322005862952]},
+  {nombre:"Plaza Vea", coordenadas:[-77.0717097764218,-11.939350931359142]},
+  {nombre:"Yanbal", coordenadas:[-77.06939332531019,-11.956746274572227]},
+  {nombre:"Villasol", coordenadas:[-77.06900679907314,-11.95911475708115]},
+  {nombre:"Estación Universidad", coordenadas:[-77.06241643450402,-11.963330776974137]}
+];
+
+const PARADEROS_AN03_PUNTA_IDA = [
+  {nombre:"Estación Universidad", coordenadas:[-77.0623036152461,-11.962118636853173]},
+  {nombre:"Villasol", coordenadas:[-77.06874184353579,-11.959420806543806]},
+  {nombre:"Yanbal", coordenadas:[-77.06912883832442,-11.957079219802514]},
+  {nombre:"Plaza Vea", coordenadas:[-77.0713494705979,-11.940229495747321]},
+  {nombre:"El Álamo", coordenadas:[-77.06748942383282,-11.929433558064295]},
+  {nombre:"Botica", coordenadas:[-77.06404432226032,-11.924967810940126]},
+  {nombre:"El Pinar", coordenadas:[-77.06130893740918,-11.920128812099453]},
+  {nombre:"Kiosko", coordenadas:[-77.05910547039774,-11.916186424998747]},
+  {nombre:"Los Incas", coordenadas:[-77.05615435138769,-11.910924682110435]},
+  {nombre:"Alameda El Pinar", coordenadas:[-77.05213281290517,-11.90373878715683]},
+  {nombre:"Oficina", coordenadas:[-77.0495693722043,-11.899225701145172]},
+  {nombre:"San Felipe", coordenadas:[-77.04824394981406,-11.896844347550369]},
+  {nombre:"Remanso", coordenadas:[-77.04667585120947,-11.89400185846146]},
+  {nombre:"Peycar", coordenadas:[-77.04494295867828,-11.891596528929025]}
+];
+
+const PARADEROS_AN03_PUNTA_VUELTA = [
+  {nombre:"Remanso", coordenadas:[-77.04673445650637,-11.893519082379164]},
+  {nombre:"San Felipe", coordenadas:[-77.04822814478237,-11.896209787604182]},
+  {nombre:"Oficina", coordenadas:[-77.04981785684535,-11.899054858037163]},
+  {nombre:"Alameda El Pinar", coordenadas:[-77.0523688889996,-11.903454043456701]},
+  {nombre:"Los Incas", coordenadas:[-77.05618282948312,-11.91029753655607]},
+  {nombre:"Kiosko", coordenadas:[-77.05942430579837,-11.916076302590541]},
+  {nombre:"El Pinar", coordenadas:[-77.06155771766232,-11.919953867497115]},
+  {nombre:"Botica", coordenadas:[-77.06400055259891,-11.924357691072862]},
+  {nombre:"El Álamo", coordenadas:[-77.0674745032855,-11.929060211073523]},
+  {nombre:"Segunda de Pro", coordenadas:[-77.07231948141968,-11.932525570663323]},
+  {nombre:"La Amistad", coordenadas:[-77.07202963774809,-11.935322005862952]},
+  {nombre:"Plaza Vea", coordenadas:[-77.0717097764218,-11.939350931359142]},
+  {nombre:"Yanbal", coordenadas:[-77.06939332531019,-11.956746274572227]},
+  {nombre:"Villasol", coordenadas:[-77.06900679907314,-11.95911475708115]},
+  {nombre:"Estación Universidad", coordenadas:[-77.06241643450402,-11.963330776974137]}
+];
+
+
+let marcadoresAN03 = [];
+let AN03ActualizacionHorario = null;
+
+function obtenerHorarioAN03() {
+  const partes = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(new Date());
+
+  const hora = Number(partes.find(p => p.type === "hour").value);
+  const minuto = Number(partes.find(p => p.type === "minute").value);
+  const minutosDelDia = hora * 60 + minuto;
+
+  if (minutosDelDia >= 360 && minutosDelDia < 510) {
+    return "punta"; // 6:00 a. m. – 8:30 a. m.
+  }
+
+  if (minutosDelDia >= 510 && minutosDelDia < 1020) {
+    return "regular"; // 8:30 a. m. – 5:00 p. m.
+  }
+
+  if (minutosDelDia >= 1020 && minutosDelDia < 1440) {
+    return "punta"; // 5:00 p. m. – 12:00 a. m.
+  }
+
+  return "sin-servicio"; // 12:00 a. m. – 6:00 a. m.
+}
+
+
+function mostrarParaderosAN03() {
+  // Evita crear marcadores duplicados.
+  marcadoresAN03.forEach(item => item.marker.remove());
+  marcadoresAN03 = [];
+
+  const horario = obtenerHorarioAN03();
+
+  const grupos = [
+    {paraderos: PARADEROS_AN03_REGULAR_IDA, variante: "regular", sentido: "Ida"},
+    {paraderos: PARADEROS_AN03_REGULAR_VUELTA, variante: "regular", sentido: "Vuelta"},
+    {paraderos: PARADEROS_AN03_PUNTA_IDA, variante: "punta", sentido: "Ida"},
+    {paraderos: PARADEROS_AN03_PUNTA_VUELTA, variante: "punta", sentido: "Vuelta"}
+  ];
+
+  // Evita dibujar dos veces un paradero con el mismo nombre
+  // y las mismas coordenadas.
+  const unicos = new Map();
+
+  grupos.forEach(grupo => {
+    grupo.paraderos.forEach(paradero => {
+      const clave = `${paradero.nombre}|${paradero.coordenadas[0]}|${paradero.coordenadas[1]}`;
+
+      if (!unicos.has(clave)) {
+        unicos.set(clave, {
+          ...paradero,
+          variante: grupo.variante,
+          sentido: grupo.sentido
+        });
+      } else {
+        const existente = unicos.get(clave);
+
+        // Si el paradero pertenece a ambas variantes,
+        // se mantiene disponible en ambas.
+        existente.variantes = [
+          ...new Set([
+            ...(existente.variantes || [existente.variante]),
+            grupo.variante
+          ])
+        ];
+      }
+    });
+  });
+
+  unicos.forEach(paradero => {
+    const variantes = paradero.variantes || [paradero.variante];
+    const activo = variantes.includes(horario);
+
+    const elemento = document.createElement("button");
+    elemento.type = "button";
+    elemento.title = `${paradero.nombre} — ${paradero.sentido}`;
+    elemento.setAttribute(
+      "aria-label",
+      `AN-03, ${paradero.nombre}, ${paradero.sentido}`
+    );
+    
+    
+    elemento.style.cssText = `
+     width: 32px;
+     height: 32px;
+     box-sizing: border-box;
+     padding: 4px;
+     border-radius: 10px;
+     border: 2px solid white;
+     cursor: pointer;
+     background: ${
+      activo
+        ? (paradero.sentido === "Vuelta" ? "#f97316" : "#facc15")
+        : "#9ca3af"
+     };
+     box-shadow: 0 2px 8px #0008;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     `;
+
+    elemento.appendChild(crearIconoBus("#ffffff"));
+
+
+    
+elemento.addEventListener("click", event => {
+  event.stopPropagation();
+
+  if (!activo) {
+    new maplibregl.Popup({offset: 18})
+      .setLngLat(paradero.coordenadas)
+      .setText(
+        "Paradero sin servicio ahora mismo, vuelve más tarde."
+      )
+      .addTo(mapa);
+
+    return;
+  }
+
+   mostrarFichaEstacion({
+     nombre: paradero.nombre,
+     coordenadas: paradero.coordenadas,
+     tipoServicio: "alimentador",
+     codigoAlimentador: "AN-03",
+     nombreAlimentador: "AN-03",
+     sentido: paradero.sentido,
+     descripcion:
+       "Paradero del alimentador AN-03. " +
+       "Servicio con buses de 12 metros. " +
+       "Sentido: " + paradero.sentido + "."
+   });
+});
+
+
+    const marker = new maplibregl.Marker({
+      element: elemento,
+      anchor: "center"
+    })
+      .setLngLat(paradero.coordenadas)
+      .addTo(mapa);
+
+    marcadoresAN03.push({
+      marker,
+      elemento,
+      paradero,
+      variantes
+    });
+  });
+}
+
+function actualizarHorarioAN03() {
+  const horario = obtenerHorarioAN03();
+
+  marcadoresAN03.forEach(item => {
+    const activo = item.variantes.includes(horario);
+   
+  item.elemento.style.background = activo
+    ? (item.paradero.sentido === "Vuelta" ? "#f97316" : "#facc15")
+    : "#9ca3af";
+
+  });
+}
+
+let marcadoresAN02 = [];
+let AN02Visible = false;
+
 let marcadoresAN01 = [];
 let AN01Visible = false;
 
@@ -1525,6 +2120,7 @@ function mostrarRecorridoAN01() {
       elemento.style.display = "flex";
       elemento.style.alignItems = "center";
       elemento.style.justifyContent = "center";
+      elemento.style.cursor = "pointer";
       elemento.title = "AN-01 " + sentido + " · Paradero " + (indice + 1);
       elemento.appendChild(crearIconoBus("#ffffff"));
       elemento.setAttribute("role","button");
@@ -1555,10 +2151,95 @@ function mostrarRecorridoAN01() {
   AN01Visible=true;
   boton.textContent="Ocultar recorrido AN-01";
   estado("estadoAN01","Se muestran 9 paraderos de ida y 9 de vuelta, sin líneas entre ellos. Icono verde: ida; naranja: vuelta. Pulsa cada bus para ver su nombre y coordenadas.");
-  mapa.fitBounds(limites,{padding:70,maxZoom:15,duration:900});
+  // No cambiar la vista inicial de Lima.
 }
 
 document.getElementById("botonAN01").addEventListener("click",mostrarRecorridoAN01);
+
+function mostrarRecorridoAN02(boton = null, ajustarVista = false) {
+  if (!mapa.isStyleLoaded()) {
+    estado("estadoAN02",
+      "El mapa todavía está cargando. Inténtalo de nuevo.");
+    return;
+  }
+
+  const limites = new maplibregl.LngLatBounds();
+
+  function agregarMarcadores(paraderos, sentido, color) {
+    paraderos.forEach((paradero, indice) => {
+      const elemento = document.createElement("button");
+      elemento.type = "button";
+      elemento.style.width = "32px";
+      elemento.style.height = "32px";
+      elemento.style.cursor = "pointer";
+      elemento.style.pointerEvents = "auto";
+      elemento.style.boxSizing = "border-box";
+      elemento.style.padding = "4px";
+      elemento.style.borderRadius = "10px";
+      elemento.style.border = "2px solid white";
+      elemento.style.background = color;
+      elemento.style.boxShadow = "0 2px 8px #0008";
+      elemento.style.display = "flex";
+      elemento.style.alignItems = "center";
+      elemento.style.justifyContent = "center";
+      elemento.title = "AN-02 " + sentido + " · Paradero " + (indice + 1);
+      elemento.setAttribute(
+        "aria-label",
+        paradero.nombre + ", AN-02, sentido " + sentido
+      );
+
+      elemento.appendChild(crearIconoBus("#ffffff"));
+
+      const marcador = new maplibregl.Marker({element: elemento})
+        .setLngLat(paradero.coordenadas)
+        .addTo(mapa);
+
+      elemento.addEventListener("click", () => {
+        mostrarFichaEstacion({
+          nombre: paradero.nombre,
+          coordenadas: paradero.coordenadas,
+          tipoServicio: "alimentador",
+          codigoAlimentador: "AN-02",
+          nombreAlimentador: "Naranjal",
+          sentido: sentido,
+          descripcion:
+            "Paradero " + (indice + 1) +
+            " del alimentador AN-02 (Naranjal), sentido " +
+            sentido.toLowerCase() +
+            ". Verifica la información vigente con la ATU."
+        });
+      });
+
+      marcadoresAN02.push(marcador);
+      limites.extend(paradero.coordenadas);
+    });
+  }
+
+  agregarMarcadores(PARADEROS_AN02_IDA, "Ida", "#087443");
+  agregarMarcadores(PARADEROS_AN02_VUELTA, "Vuelta", "#d97706");
+
+  AN02Visible = true;
+  if (boton) {
+  boton.textContent = "Ocultar recorrido AN-02";
+}
+
+  const estadoAN02 = document.getElementById("estadoAN02");
+
+if (estadoAN02) {
+  estadoAN02.textContent =
+    "Se muestran 11 paraderos de ida y 11 de vuelta. Verde: ida; naranja: vuelta. No se dibujan líneas.";
+}
+
+    if (ajustarVista) {
+     mapa.fitBounds(limites, {
+      padding: 70,
+      maxZoom: 15,
+      duration: 900
+    });
+  }
+}
+
+
 
 function dibujarAlimentadores(filtro="") {
   const lista=document.getElementById("listaAlimentadores");
@@ -1615,14 +2296,36 @@ function dibujarAlimentadores(filtro="") {
       aviso.textContent=
         "Esta ficha no representa el recorrido completo ni confirma todos los paraderos. Comprueba el recorrido vigente con la ATU.";
 
-      if (servicio.codigo === "AN-01") {
-        const botonRecorrido=document.createElement("button");
-        botonRecorrido.type="button";
-        botonRecorrido.className="accion azul";
-        botonRecorrido.textContent="Mostrar paraderos de ida y vuelta en el mapa";
-        botonRecorrido.addEventListener("click",()=>mostrarRecorridoAN01());
-        detalle.appendChild(botonRecorrido);
-      }
+     
+if (
+  servicio.codigo === "AN-01" ||
+  servicio.codigo === "AN-02"
+) {
+  const botonRecorrido = document.createElement("button");
+  botonRecorrido.type = "button";
+  botonRecorrido.className = "accion azul";
+  botonRecorrido.textContent =
+    "Mostrar paraderos de ida y vuelta en el mapa";
+
+  const estadoRecorrido = document.createElement("p");
+  estadoRecorrido.id =
+    servicio.codigo === "AN-01" ? "estadoAN01" : "estadoAN02";
+  estadoRecorrido.setAttribute("aria-live", "polite");
+
+  if (servicio.codigo === "AN-01") {
+    botonRecorrido.addEventListener(
+      "click",
+      () => mostrarRecorridoAN01()
+    );
+  } else {
+    botonRecorrido.addEventListener(
+      "click",
+      () => mostrarRecorridoAN02(botonRecorrido)
+    );
+  }
+
+  detalle.append(botonRecorrido, estadoRecorrido);
+}
 
       const botonBuscar=document.createElement("button");
       botonBuscar.type="button";
@@ -1895,7 +2598,7 @@ formCuenta.addEventListener("submit",async e=>{
         await signOut(authCuenta).catch(()=>{});
         throw profileError;
       }
-      mensajeCuenta("¡Cuenta creada! Ya puedes usar GeoPerú.");
+      mensajeCuenta("¡Cuenta creada! Ya puedes usar Rumbia Maps.");
     } else {
       await signInWithEmailAndPassword(authCuenta,email,password);
       mensajeCuenta("Sesión iniciada correctamente.");
@@ -2054,7 +2757,7 @@ document.getElementById("recargarPropuestas")?.addEventListener(
     const snap = await getDoc(doc(dbCuenta,"users",user.uid));
     if(snap.exists()) data = {...data,...snap.data()};
   } catch(error) {
-    console.warn("No se pudo leer el perfil de GeoPerú:",error);
+    console.warn("No se pudo leer el perfil de Rumbia Maps:",error);
   }
   perfilActual = { ...data, uid:user.uid };
   boton.textContent = data.username || "Mi cuenta";
@@ -2230,7 +2933,7 @@ function mostrarUbicacionesPublicas(ubicaciones) {
     ubicacionFicha.emoji + " " + ubicacionFicha.categoria;
 
   document.getElementById("fichaTipoServicio").textContent =
-    "Ubicación pública de GeoPerú";
+    "Ubicación pública de Rumbia Maps";
 
   document.getElementById("fichaDescripcion").textContent =
     ubicacionFicha.descripcion;
@@ -2396,6 +3099,7 @@ document.getElementById("abrirPropuestaUbicacion").onclick = function () {
 document.getElementById("cerrarPropuestaUbicacion").onclick = function () {
   document.getElementById("proponerUbicacion").hidden = true;
 };
+
 </script>
   
 </body>
