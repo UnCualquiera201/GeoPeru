@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css">
 <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -434,7 +435,38 @@ const mapa = new maplibregl.Map({
   zoom: 11
 });
 window.mapa = mapa;
+// ======================================
+// CONEXIÓN CON SUPABASE - RUMBIA STREET
+// ======================================
 
+const SUPABASE_URL = "https://tuflfsrmsqyblhnyalqb.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_SSsELqhSCrRxLvpOqtmBsg_1SRyQS5k";
+
+const supabaseRumbia = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+// ======================================
+// PRUEBA DE CONEXIÓN CON RUMBIA STREET
+// ======================================
+
+async function probarConexionRumbia() {
+  const { data, error } = await supabaseRumbia
+    .from("calles_rumbia")
+    .select("id,nombre");
+
+  if (error) {
+    console.error("Error al conectar con Rumbia Street:", error);
+    return;
+  }
+
+  console.log("Conexión correcta con Rumbia Street");
+  console.log("Calles encontradas:", data);
+}
+
+probarConexionRumbia();
+  
 // ======================================
 // COBERTURA MAPILLARY DE GEOPERÚ
 // ======================================
