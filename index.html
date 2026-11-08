@@ -695,7 +695,8 @@ const geojsonFotosRumbia = {
   }))
 };
 
-// Crear la fuente definitiva de fotografías Rumbia.
+// Crear las fuentes de fotografías de Rumbia Street.
+
 if (mapa.getLayer("rumbia-fotos-numeros")) {
   mapa.removeLayer("rumbia-fotos-numeros");
 }
@@ -704,24 +705,36 @@ if (mapa.getLayer("rumbia-fotos-puntos")) {
   mapa.removeLayer("rumbia-fotos-puntos");
 }
 
+if (mapa.getSource("rumbia-fotos-copia-final")) {
+  mapa.removeSource("rumbia-fotos-copia-final");
+}
+
 if (mapa.getSource("rumbia-fotos-fuente-v2")) {
   mapa.removeSource("rumbia-fotos-fuente-v2");
 }
 
-if (mapa.getSource("rumbia-fotos-prueba-v3")) {
-  mapa.removeSource("rumbia-fotos-prueba-v3");
-}
-
-mapa.addSource("rumbia-fotos-prueba-v3", {
+// Primera fuente: datos procedentes de Supabase.
+mapa.addSource("rumbia-fotos-fuente-v2", {
   type: "geojson",
   data: geojsonFotosRumbia,
   maxzoom: 22
 });
 
+// Segunda fuente: copia de los datos procesados.
+const datosFotosParaMapaRumbia =
+  mapa.getSource("rumbia-fotos-fuente-v2")._data;
+
+mapa.addSource("rumbia-fotos-copia-final", {
+  type: "geojson",
+  data: datosFotosParaMapaRumbia,
+  maxzoom: 22
+});
+
+// Marcadores azules.
 mapa.addLayer({
   id: "rumbia-fotos-puntos",
   type: "circle",
-  source: "rumbia-fotos-prueba-v3",
+  source: "rumbia-fotos-copia-final",
   layout: {
     visibility: coberturaMapillaryActiva ? "visible" : "none"
   },
@@ -734,10 +747,11 @@ mapa.addLayer({
   }
 });
 
+// Números de las fotografías.
 mapa.addLayer({
   id: "rumbia-fotos-numeros",
   type: "symbol",
-  source: "rumbia-fotos-prueba-v3",
+  source: "rumbia-fotos-copia-final",
   layout: {
     visibility: coberturaMapillaryActiva ? "visible" : "none",
     "text-field": ["to-string", ["get", "orden"]],
