@@ -466,6 +466,59 @@ async function probarConexionRumbia() {
 }
 
 probarConexionRumbia();
+// ======================================
+// COBERTURA AZUL - RUMBIA STREET
+// ======================================
+
+async function cargarLineasRumbia() {
+  const { data, error } = await supabaseRumbia
+    .from("calles_rumbia")
+    .select("id,nombre,recorrido_geojson");
+
+  if (error) {
+    console.error("Error cargando Rumbia Street:", error);
+    return;
+  }
+
+  const geojson = {
+    type: "FeatureCollection",
+    features: data
+      .filter(calle => calle.recorrido_geojson)
+      .map(calle => ({
+        type: "Feature",
+        properties: {
+          id: calle.id,
+          nombre: calle.nombre
+        },
+        geometry: calle.recorrido_geojson
+      }))
+  };
+
+  if (!mapa.getSource("rumbia-calles-source")) {
+    mapa.addSource("rumbia-calles-source", {
+      type: "geojson",
+      data: geojson
+    });
+
+    mapa.addLayer({
+      id: "rumbia-calles-lineas",
+      type: "line",
+      source: "rumbia-calles-source",
+      layout: {
+        visibility: coberturaMapillaryActiva ? "visible" : "none"
+      },
+      paint: {
+        "line-color": "#2563eb",
+        "line-width": 5,
+        "line-opacity": 0.95
+      }
+    });
+  }
+
+  console.log("Calles de Rumbia Street cargadas:", geojson.features.length);
+}
+
+mapa.on("load", cargarLineasRumbia);
   
 // ======================================
 // COBERTURA MAPILLARY DE GEOPERÚ
@@ -537,17 +590,87 @@ function configurarCoberturaMapillary() {
     }
   });
 }
+// ======================================
+// COBERTURA AZUL - RUMBIA STREET
+// ======================================
+
+let datosCallesRumbia = null;
+
+async function configurarLineasRumbia() {
+
+  if (!mapa.isStyleLoaded()) return;
+
+  // Consultar Supabase solamente una vez.
+  if (datosCallesRumbia === null) {
+
+    const { data, error } = await supabaseRumbia
+      .from("calles_rumbia")
+      .select("id,nombre,recorrido_geojson");
+
+    if (error) {
+      console.error("Error cargando calles Rumbia:", error);
+      return;
+    }
+
+    datosCallesRumbia = data.filter(
+      calle => calle.recorrido_geojson
+    );
+  }
+
+  if (!mapa.isStyleLoaded()) return;
+
+  const geojson = {
+    type: "FeatureCollection",
+    features: datosCallesRumbia.map(calle => ({
+      type: "Feature",
+      properties: {
+        id: calle.id,
+        nombre: calle.nombre
+      },
+      geometry: calle.recorrido_geojson
+    }))
+  };
+
+  if (!mapa.getSource("rumbia-calles-source")) {
+    mapa.addSource("rumbia-calles-source", {
+      type: "geojson",
+      data: geojson
+    });
+  }
+
+  if (!mapa.getLayer("rumbia-calles-lineas")) {
+    mapa.addLayer({
+      id: "rumbia-calles-lineas",
+      type: "line",
+      source: "rumbia-calles-source",
+      layout: {
+        visibility: coberturaMapillaryActiva ? "visible" : "none"
+      },
+      paint: {
+        "line-color": "#2563eb",
+        "line-width": 5,
+        "line-opacity": 0.95
+      }
+    });
+  }
+
+  console.log("Cobertura Rumbia Street cargada:", datosCallesRumbia.length);
+}
+
+// Recuperar las líneas cuando cambia el estilo del mapa.
+mapa.on("style.load", configurarLineasRumbia);
 
 // Se ejecuta también cuando GeoPerú cambia de estilo.
 mapa.on("style.load", configurarCoberturaMapillary);
 
 // Activar y desactivar cobertura.
-botonCoberturaMapillary.addEventListener("click", () => {
+botonCoberturaMapillary.addEventListener("click", async () => {
 
   coberturaMapillaryActiva = !coberturaMapillaryActiva;
 
   if (mapa.isStyleLoaded()) {
     configurarCoberturaMapillary();
+    await configurarLineasRumbia();
 
     const visibilidad = coberturaMapillaryActiva
       ? "visible"
@@ -564,6 +687,14 @@ botonCoberturaMapillary.addEventListener("click", () => {
       "visibility",
       visibilidad
     );
+
+  if (mapa.getLayer("rumbia-calles-lineas")) {
+  mapa.setLayoutProperty(
+    "rumbia-calles-lineas",
+    "visibility",
+    visibilidad
+  );
+}  
   }
 
   botonCoberturaMapillary.setAttribute(
