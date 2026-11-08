@@ -595,6 +595,7 @@ function configurarCoberturaMapillary() {
 // ======================================
 
 let datosCallesRumbia = null;
+let datosFotosRumbia = null;
 
 async function configurarLineasRumbia() {
 
@@ -615,6 +616,21 @@ async function configurarLineasRumbia() {
     datosCallesRumbia = data.filter(
       calle => calle.recorrido_geojson
     );
+   // Cargar fotografías registradas en Supabase.
+if (datosFotosRumbia === null) {
+
+  const { data: fotos, error: errorFotos } = await supabaseRumbia
+    .from("fotografias_rumbia")
+    .select("id,nombre_archivo,ruta_archivo,lat,lng,descripcion,calle_id,orden")
+    .order("orden", { ascending: true });
+
+  if (errorFotos) {
+    console.error("Error cargando fotografías Rumbia:", errorFotos);
+    return;
+  }
+
+  datosFotosRumbia = fotos;
+}
   }
 
   if (!mapa.isStyleLoaded()) return;
@@ -653,6 +669,78 @@ async function configurarLineasRumbia() {
       }
     });
   }
+  // ======================================
+// MARCADORES DE FOTOGRAFÍAS RUMBIA
+// ======================================
+
+const geojsonFotosRumbia = {
+  type: "FeatureCollection",
+  features: datosFotosRumbia.map(foto => ({
+    type: "Feature",
+    properties: {
+      id: foto.id,
+      nombre: foto.nombre_archivo,
+      ruta: foto.ruta_archivo,
+      orden: foto.orden,
+      descripcion: foto.descripcion,
+      calle_id: foto.calle_id
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        Number(foto.lng),
+        Number(foto.lat)
+      ]
+    }
+  }))
+};
+
+if (!mapa.getSource("rumbia-fotos-source")) {
+  mapa.addSource("rumbia-fotos-source", {
+    type: "geojson",
+    data: geojsonFotosRumbia
+  });
+}
+
+if (!mapa.getLayer("rumbia-fotos-puntos")) {
+  mapa.addLayer({
+    id: "rumbia-fotos-puntos",
+    type: "circle",
+    source: "rumbia-fotos-source",
+    layout: {
+      visibility: coberturaMapillaryActiva ? "visible" : "none"
+    },
+    paint: {
+      "circle-radius": 7,
+      "circle-color": "#2563eb",
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 2
+    }
+  });
+}
+
+if (!mapa.getLayer("rumbia-fotos-numeros")) {
+  mapa.addLayer({
+    id: "rumbia-fotos-numeros",
+    type: "symbol",
+    source: "rumbia-fotos-source",
+    layout: {
+      visibility: coberturaMapillaryActiva ? "visible" : "none",
+      "text-field": ["to-string", ["get", "orden"]],
+      "text-size": 10,
+      "text-font": ["Open Sans Semibold"],
+      "text-allow-overlap": true
+    },
+    paint: {
+      "text-color": "#ffffff"
+    }
+  });
+}
+
+console.log(
+  "Fotografías Rumbia cargadas:",
+  datosFotosRumbia.length
+);
 
   console.log("Cobertura Rumbia Street cargada:", datosCallesRumbia.length);
 }
@@ -694,7 +782,23 @@ botonCoberturaMapillary.addEventListener("click", async () => {
     "visibility",
     visibilidad
   );
-}  
+}
+
+if (mapa.getLayer("rumbia-fotos-puntos")) {
+  mapa.setLayoutProperty(
+    "rumbia-fotos-puntos",
+    "visibility",
+    visibilidad
+  );
+}
+
+if (mapa.getLayer("rumbia-fotos-numeros")) {
+  mapa.setLayoutProperty(
+    "rumbia-fotos-numeros",
+    "visibility",
+    visibilidad
+  );
+}
   }
 
   botonCoberturaMapillary.setAttribute(
