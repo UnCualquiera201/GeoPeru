@@ -695,48 +695,55 @@ const geojsonFotosRumbia = {
   }))
 };
 
-if (!mapa.getSource("rumbia-fotos-source")) {
-  mapa.addSource("rumbia-fotos-source", {
-    type: "geojson",
-    data: geojsonFotosRumbia,
-    maxzoom: 22
-  });
+// Crear nuevamente la fuente de fotografías.
+if (mapa.getLayer("rumbia-fotos-numeros")) {
+  mapa.removeLayer("rumbia-fotos-numeros");
 }
 
-if (!mapa.getLayer("rumbia-fotos-puntos")) {
-  mapa.addLayer({
-    id: "rumbia-fotos-puntos",
-    type: "circle",
-    source: "rumbia-fotos-source",
-    layout: {
-      visibility: coberturaMapillaryActiva ? "visible" : "none"
-    },
-    paint: {
-      "circle-radius": 7,
-      "circle-color": "#2563eb",
-      "circle-stroke-color": "#ffffff",
-      "circle-stroke-width": 2
-    }
-  });
+if (mapa.getLayer("rumbia-fotos-puntos")) {
+  mapa.removeLayer("rumbia-fotos-puntos");
 }
 
-if (!mapa.getLayer("rumbia-fotos-numeros")) {
-  mapa.addLayer({
-    id: "rumbia-fotos-numeros",
-    type: "symbol",
-    source: "rumbia-fotos-source",
-    layout: {
-      visibility: coberturaMapillaryActiva ? "visible" : "none",
-      "text-field": ["to-string", ["get", "orden"]],
-      "text-size": 10,
-      "text-font": ["Open Sans Semibold"],
-      "text-allow-overlap": true
-    },
-    paint: {
-      "text-color": "#ffffff"
-    }
-  });
+if (mapa.getSource("rumbia-fotos-source")) {
+  mapa.removeSource("rumbia-fotos-source");
 }
+
+mapa.addSource("rumbia-fotos-source", {
+  type: "geojson",
+  data: geojsonFotosRumbia,
+  maxzoom: 22
+});
+
+mapa.addLayer({
+  id: "rumbia-fotos-puntos",
+  type: "circle",
+  source: "rumbia-fotos-source",
+  layout: {
+    visibility: coberturaMapillaryActiva ? "visible" : "none"
+  },
+  paint: {
+    "circle-radius": 7,
+    "circle-color": "#2563eb",
+    "circle-stroke-color": "#ffffff",
+    "circle-stroke-width": 2
+  }
+});
+
+mapa.addLayer({
+  id: "rumbia-fotos-numeros",
+  type: "symbol",
+  source: "rumbia-fotos-source",
+  layout: {
+    visibility: coberturaMapillaryActiva ? "visible" : "none",
+    "text-field": ["to-string", ["get", "orden"]],
+    "text-size": 10,
+    "text-font": ["Open Sans Semibold"],
+    "text-allow-overlap": true
+  },
+  paint: {
+    "text-color": "#ffffff"
+  }
+});
 
 console.log(
   "Fotografías Rumbia cargadas:",
