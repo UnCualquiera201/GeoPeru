@@ -871,7 +871,7 @@ const MAPILLARY_ACCESS_TOKEN = "MLY|28732533203106262|cdba80358b218a282f561c4d66
 let visorMapillary = null;
 let seleccionGeoVistaActiva = false;
 let marcadorGeoVista = null;
-let fuenteGeoVista = "auto"; // auto | mapillary | google
+let fuenteGeoVista = "auto"; // auto | mapillary | google | rumbia
 let ultimoPuntoGeoVista = null;
 let peticionGeoVista = 0;
 const panelGeoVista = document.getElementById("panelGeoVista");
@@ -904,10 +904,15 @@ function mostrarMensajeGeoVista(mensaje) {
 }
 function marcarFuenteGeoVista(fuente) {
   fuenteGeoVista = fuente;
+
   document.getElementById("fuenteAutoGeoVista").classList.toggle("activa", fuente === "auto");
   document.getElementById("fuenteMapillaryGeoVista").classList.toggle("activa", fuente === "mapillary");
   document.getElementById("fuenteGoogleGeoVista").classList.toggle("activa", fuente === "google");
-  if (ultimoPuntoGeoVista) cargarGeoVistaEn(ultimoPuntoGeoVista.lng, ultimoPuntoGeoVista.lat);
+  document.getElementById("fuenteRumbiaGeoVista").classList.toggle("activa", fuente === "rumbia");
+
+  if (ultimoPuntoGeoVista) {
+    cargarGeoVistaEn(ultimoPuntoGeoVista.lng, ultimoPuntoGeoVista.lat);
+  }
 }
 
 async function buscarImagenMapillary(lng, lat) {
@@ -1140,11 +1145,112 @@ async function mostrarMapillary(lng, lat, idPeticion) {
   );
 }
 
+async function mostrarRumbiaStreet(lng, lat, idPeticion) {
+  estadoGeoVistaTexto("Buscando fotografías de Rumbia Street...");
+
+  if (!Array.isArray(datosFotosRumbia)) {
+    const { data, error } = await supabaseRumbia
+      .from("fotografias_rumbia")
+      .select("id,nombre_archivo,ruta_archivo,lat,lng,descripcion,calle_id,orden")
+      .order("orden", { ascending: true });
+
+    if (error) {
+      throw new Error("No se pudieron consultar las fotografías de Supabase.");
+    }
+
+    datosFotosRumbia = data;
+  }
+
+  if (idPeticion !== peticionGeoVista) return;
+
+  function distanciaMetros(lng1, lat1, lng2, lat2) {
+    const R = 6371000;
+    const rad = valor => valor * Math.PI / 180;
+    const dLat = rad(lat2 - lat1);
+    const dLng = rad(lng2 - lng1);
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(rad(lat1)) * Math.cos(rad(lat2)) *
+      Math.sin(dLng / 2) ** 2;
+
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  const cercanas = datosFotosRumbia
+    .filter(foto => Number.isFinite(Number(foto.lat)) && Number.isFinite(Number(foto.lng)))
+    .map(foto => ({
+      foto,
+      distancia: distanciaMetros(
+        lng, lat,
+        Number(foto.lng),
+        Number(foto.lat)
+      )
+    }))
+    .sort((a, b) => a.distancia - b.distancia);
+
+  const resultado = cercanas.find(item => item.distancia <= 80);
+
+  if (!resultado) {
+    mostrarMensajeGeoVista("No hay fotografías de Rumbia Street cerca de este punto.");
+    estadoGeoVistaTexto("No se encontraron fotografías en un radio de 80 metros.");
+    return;
+  }
+
+  if (visorMapillary) {
+    try {
+      visorMapillary.remove();
+    } catch (_) {}
+    visorMapillary = null;
+  }
+
+  const foto = resultado.foto;
+
+  const { data } = supabaseRumbia.storage
+    .from("rumbia-street")
+    .getPublicUrl(foto.ruta_archivo);
+
+  if (idPeticion !== peticionGeoVista) return;
+
+  contenedorMapillary.replaceChildren();
+
+  const contenedor = document.createElement("div");
+  contenedor.style.cssText = "width:100%;height:100%;min-height:240px;display:flex;flex-direction:column;background:#101820;";
+
+  const imagen = document.createElement("img");
+  imagen.src = data.publicUrl;
+  imagen.alt = foto.descripcion || foto.nombre_archivo;
+  imagen.style.cssText = "width:100%;height:100%;min-height:200px;flex:1;object-fit:contain;";
+
+  imagen.addEventListener("error", () => {
+    estadoGeoVistaTexto("No se pudo cargar la fotografía desde Supabase.");
+  });
+
+  const descripcion = document.createElement("div");
+  descripcion.style.cssText = "padding:12px;color:white;background:#087443;font-size:13px;text-align:center;";
+  descripcion.textContent = "📷 Fotografía " + foto.orden + " · " + (foto.descripcion || foto.nombre_archivo);
+
+  contenedor.appendChild(imagen);
+  contenedor.appendChild(descripcion);
+  contenedorMapillary.appendChild(contenedor);
+
+  estadoGeoVistaTexto("Fotografía de Rumbia Street encontrada a " + Math.round(resultado.distancia) + " metros.");
+}
+
 async function cargarGeoVistaEn(lng, lat) {
   ultimoPuntoGeoVista = {lng, lat};
   abrirGeoVista();
   const idPeticion = ++peticionGeoVista;
-  if (fuenteGeoVista === "google") {
+  if (fuenteGeoVista === "rumbia") {
+  try {
+    await mostrarRumbiaStreet(lng, lat, idPeticion);
+  } catch (error) {
+    if (idPeticion === peticionGeoVista) {
+      mostrarMensajeGeoVista(error.message);
+      estadoGeoVistaTexto(error.message);
+    }
+  }
+} else if (fuenteGeoVista === "google") {
     mostrarGoogleStreetView(lng, lat, "Fuente elegida: Google Street View.");
   } else if (fuenteGeoVista === "mapillary") {
     try { await mostrarMapillary(lng, lat, idPeticion); }
@@ -1236,6 +1342,7 @@ document.getElementById("buscarMiUbicacionGeoVista").addEventListener("click",()
 document.getElementById("fuenteAutoGeoVista").addEventListener("click",()=>marcarFuenteGeoVista("auto"));
 document.getElementById("fuenteMapillaryGeoVista").addEventListener("click",()=>marcarFuenteGeoVista("mapillary"));
 document.getElementById("fuenteGoogleGeoVista").addEventListener("click",()=>marcarFuenteGeoVista("google"));
+document.getElementById("fuenteRumbiaGeoVista").addEventListener("click",()=>marcarFuenteGeoVista("rumbia"));
 mapa.on("click", evento=>{
   if (!seleccionGeoVistaActiva) return;
   seleccionGeoVistaActiva = false;
