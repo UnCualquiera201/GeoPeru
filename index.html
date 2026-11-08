@@ -596,6 +596,7 @@ function configurarCoberturaMapillary() {
 
 let datosCallesRumbia = null;
 let datosFotosRumbia = null;
+let marcadoresFotosRumbia = [];
 
 async function configurarLineasRumbia() {
 
@@ -695,8 +696,15 @@ const geojsonFotosRumbia = {
   }))
 };
 
-// Crear las fuentes de fotografías de Rumbia Street.
 
+// Limpiar los marcadores anteriores.
+marcadoresFotosRumbia.forEach(marcador => {
+  marcador.remove();
+});
+
+marcadoresFotosRumbia = [];
+
+// Eliminar las capas antiguas de fotografías.
 if (mapa.getLayer("rumbia-fotos-numeros")) {
   mapa.removeLayer("rumbia-fotos-numeros");
 }
@@ -705,64 +713,52 @@ if (mapa.getLayer("rumbia-fotos-puntos")) {
   mapa.removeLayer("rumbia-fotos-puntos");
 }
 
-if (mapa.getSource("rumbia-fotos-copia-final")) {
-  mapa.removeSource("rumbia-fotos-copia-final");
-}
-
+// Eliminar la fuente antigua, si todavía existe.
 if (mapa.getSource("rumbia-fotos-fuente-v2")) {
   mapa.removeSource("rumbia-fotos-fuente-v2");
 }
 
-// Primera fuente: datos procedentes de Supabase.
-mapa.addSource("rumbia-fotos-fuente-v2", {
-  type: "geojson",
-  data: geojsonFotosRumbia,
-  maxzoom: 22
+// Crear un marcador HTML por cada fotografía.
+datosFotosRumbia.forEach(foto => {
+
+  const elemento = document.createElement("div");
+
+  elemento.className = "rumbia-foto-marker";
+  elemento.textContent = String(foto.orden ?? "");
+
+  elemento.title = foto.descripcion || foto.nombre_archivo;
+
+  // Diseño del marcador.
+  elemento.style.width = "28px";
+  elemento.style.height = "28px";
+  elemento.style.borderRadius = "50%";
+  elemento.style.backgroundColor = "#2563eb";
+  elemento.style.border = "2px solid #ffffff";
+  elemento.style.boxSizing = "border-box";
+  elemento.style.color = "#ffffff";
+  elemento.style.fontFamily = "Arial, sans-serif";
+  elemento.style.fontSize = "11px";
+  elemento.style.fontWeight = "bold";
+  elemento.style.display = coberturaMapillaryActiva ? "flex" : "none";
+  elemento.style.alignItems = "center";
+  elemento.style.justifyContent = "center";
+  elemento.style.cursor = "pointer";
+  elemento.style.boxShadow = "0 2px 5px rgba(0,0,0,0.35)";
+
+  // Colocar el marcador en las coordenadas de Supabase.
+  const marcador = new maplibregl.Marker({
+    element: elemento,
+    anchor: "center"
+  })
+    .setLngLat([
+      Number(foto.lng),
+      Number(foto.lat)
+    ])
+    .addTo(mapa);
+
+  marcadoresFotosRumbia.push(marcador);
 });
 
-// Segunda fuente: copia de los datos procesados.
-const datosFotosParaMapaRumbia =
-  mapa.getSource("rumbia-fotos-fuente-v2")._data;
-
-mapa.addSource("rumbia-fotos-copia-final", {
-  type: "geojson",
-  data: datosFotosParaMapaRumbia,
-  maxzoom: 22
-});
-
-// Marcadores azules.
-mapa.addLayer({
-  id: "rumbia-fotos-puntos",
-  type: "circle",
-  source: "rumbia-fotos-copia-final",
-  layout: {
-    visibility: coberturaMapillaryActiva ? "visible" : "none"
-  },
-  paint: {
-    "circle-radius": 7,
-    "circle-color": "#2563eb",
-    "circle-opacity": 1,
-    "circle-stroke-color": "#ffffff",
-    "circle-stroke-width": 2
-  }
-});
-
-// Números de las fotografías.
-mapa.addLayer({
-  id: "rumbia-fotos-numeros",
-  type: "symbol",
-  source: "rumbia-fotos-copia-final",
-  layout: {
-    visibility: coberturaMapillaryActiva ? "visible" : "none",
-    "text-field": ["to-string", ["get", "orden"]],
-    "text-size": 10,
-    "text-font": ["Open Sans Regular"],
-    "text-allow-overlap": true
-  },
-  paint: {
-    "text-color": "#ffffff"
-  }
-});
 
 mapa.addLayer({
   id: "rumbia-fotos-numeros",
