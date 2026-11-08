@@ -698,7 +698,8 @@ const geojsonFotosRumbia = {
 if (!mapa.getSource("rumbia-fotos-source")) {
   mapa.addSource("rumbia-fotos-source", {
     type: "geojson",
-    data: geojsonFotosRumbia
+    data: geojsonFotosRumbia,
+    maxzoom: 22
   });
 }
 
