@@ -117,10 +117,7 @@ button.rojo{background:#b83232}
 #fuentesGeoVista{display:flex;gap:6px;align-items:center}
 #fuentesGeoVista button{border:0;border-radius:8px;padding:8px 10px;background:#e8edf3;color:#263448;font-size:12px;font-weight:bold;cursor:pointer}
 #fuentesGeoVista button.activa{background:#087443;color:#fff}
-#fuentesGeoVista button[data-fuente="rumbia"]{
-  background:#2563eb;
-  color:white;
-}
+<div id="fuentesGeoVista" aria-label="Fuente de panorámicas"><button type="button" id="fuenteAutoGeoVista" class="activa">Automático</button><button type="button" id="fuenteMapillaryGeoVista">Mapillary</button><button type="button" id="fuenteGoogleGeoVista">Google</button></div>
 #panelGeoVista{display:none;position:fixed;z-index:40;inset:12px;background:#fff;border-radius:16px;box-shadow:0 8px 35px #0006;overflow:hidden;flex-direction:column}
 #panelGeoVista.visible{display:flex}
 #cabeceraGeoVista{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:#087443;color:white;flex-shrink:0}
