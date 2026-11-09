@@ -1301,14 +1301,14 @@ if (marcadorGeoVista) {
       (foto.descripcion || foto.nombre_archivo);
 
     flechaAnterior.disabled = indiceActual === 0;
-    flechaSiguiente.disabled = indiceActual === fotosCalle.length - 1;
+    flechaSiguiente.disabled = indiceActual === fotosRecorrido.length - 1;
 
     flechaAnterior.style.opacity = flechaAnterior.disabled ? "0.35" : "1";
     flechaSiguiente.style.opacity = flechaSiguiente.disabled ? "0.35" : "1";
 
     estadoGeoVistaTexto(
       "Fotografía " + (indiceActual + 1) +
-      " de " + fotosCalle.length + " · Rumbia Street"
+      " de " + fotosRecorrido.length + " · Rumbia Street"
     );
   }
 
@@ -1320,7 +1320,7 @@ if (marcadorGeoVista) {
   });
 
   flechaSiguiente.addEventListener("click", () => {
-    if (indiceActual < fotosCalle.length - 1) {
+    if (indiceActual < fotosRecorrido.length - 1) {
       indiceActual++;
       mostrarFotoActual();
     }
