@@ -1145,20 +1145,22 @@ async function mostrarMapillary(lng, lat, idPeticion) {
   );
 }
 
+
 async function mostrarRumbiaStreet(lng, lat, idPeticion) {
   estadoGeoVistaTexto("Buscando fotografías de Rumbia Street...");
 
   if (!Array.isArray(datosFotosRumbia)) {
     const { data, error } = await supabaseRumbia
       .from("fotografias_rumbia")
-      .select("id,nombre_archivo,ruta_archivo,lat,lng,descripcion,calle_id,orden")
+      .select("id,nombre_archivo,ruta_archivo,lat,lng,descripcion,calle_id,orden,calle:calles_rumbia(nombre)")
       .order("orden", { ascending: true });
 
     if (error) {
-      throw new Error("No se pudieron consultar las fotografías de Supabase.");
+      console.error("Error de Supabase:", error);
+      throw new Error("No se pudieron consultar las fotografías y sus calles.");
     }
 
-    datosFotosRumbia = data;
+    datosFotosRumbia = data || [];
   }
 
   if (idPeticion !== peticionGeoVista) return;
@@ -1177,12 +1179,40 @@ async function mostrarRumbiaStreet(lng, lat, idPeticion) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  const cercanas = datosFotosRumbia
-    .filter(foto => Number.isFinite(Number(foto.lat)) && Number.isFinite(Number(foto.lng)))
+  const ordenCalles = [
+    "San Martín de Porres",
+    "Miguel Grau",
+    "Nazarenas",
+    "Auxiliar Túpac Amaru"
+  ];
+
+  const fotosRecorrido = datosFotosRumbia
+    .filter(foto =>
+      ordenCalles.includes(foto.calle?.nombre) &&
+      Number.isFinite(Number(foto.lat)) &&
+      Number.isFinite(Number(foto.lng))
+    )
+    .sort((a, b) => {
+      const ordenA = ordenCalles.indexOf(a.calle.nombre);
+      const ordenB = ordenCalles.indexOf(b.calle.nombre);
+
+      if (ordenA !== ordenB) return ordenA - ordenB;
+
+      return Number(a.orden) - Number(b.orden);
+    });
+
+  if (fotosRecorrido.length === 0) {
+    throw new Error(
+      "No se encontraron fotografías del recorrido. Comprueba la relación entre las tablas de Supabase."
+    );
+  }
+
+  const cercanas = fotosRecorrido
     .map(foto => ({
       foto,
       distancia: distanciaMetros(
-        lng, lat,
+        lng,
+        lat,
         Number(foto.lng),
         Number(foto.lat)
       )
@@ -1192,8 +1222,12 @@ async function mostrarRumbiaStreet(lng, lat, idPeticion) {
   const resultado = cercanas.find(item => item.distancia <= 80);
 
   if (!resultado) {
-    mostrarMensajeGeoVista("No hay fotografías de Rumbia Street cerca de este punto.");
-    estadoGeoVistaTexto("No se encontraron fotografías en un radio de 80 metros.");
+    mostrarMensajeGeoVista(
+      "No hay fotografías de Rumbia Street cerca de este punto."
+    );
+    estadoGeoVistaTexto(
+      "No se encontraron fotografías en un radio de 80 metros."
+    );
     return;
   }
 
@@ -1206,31 +1240,13 @@ async function mostrarRumbiaStreet(lng, lat, idPeticion) {
 
   const fotoInicial = resultado.foto;
 
-  const ordenCalles = [
-  "San Martín de Porres",
-  "Miguel Grau",
-  "Nazarenas",
-  "Auxiliar Túpac Amaru"
-];
+  let indiceActual = fotosRecorrido.findIndex(
+    foto => foto.id === fotoInicial.id
+  );
 
-const fotosRecorrido = datosFotosRumbia
-  .filter(foto =>
-    ordenCalles.includes(foto.calles_rumbia?.nombre)
-  )
-  .sort((a, b) => {
-    const ordenA = ordenCalles.indexOf(a.calles_rumbia.nombre);
-    const ordenB = ordenCalles.indexOf(b.calles_rumbia.nombre);
-
-    if (ordenA !== ordenB) return ordenA - ordenB;
-
-    return Number(a.orden) - Number(b.orden);
-  });
-
-let indiceActual = fotosRecorrido.findIndex(
-  foto => foto.id === fotoInicial.id
-);
-
-if (indiceActual < 0) indiceActual = 0;
+  if (indiceActual < 0) {
+    throw new Error("No se pudo localizar la fotografía seleccionada.");
+  }
 
   contenedorMapillary.replaceChildren();
 
@@ -1272,21 +1288,19 @@ if (indiceActual < 0) indiceActual = 0;
     "padding:12px;color:white;background:#087443;font-size:13px;text-align:center;";
 
   function mostrarFotoActual() {
-   const foto = fotosRecorrido[indiceActual];
+    const foto = fotosRecorrido[indiceActual];
 
-if (marcadorGeoVista) {
-  marcadorGeoVista.setLngLat([
-    Number(foto.lng),
-    Number(foto.lat)
-  ]);
-}
+    if (!foto) {
+      console.error("No existe una fotografía en el índice:", indiceActual);
+      return;
+    }
 
     if (marcadorGeoVista) {
-  marcadorGeoVista.setLngLat([
-    Number(foto.lng),
-    Number(foto.lat)
-  ]);
-}
+      marcadorGeoVista.setLngLat([
+        Number(foto.lng),
+        Number(foto.lat)
+      ]);
+    }
 
     const { data } = supabaseRumbia.storage
       .from("rumbia-street")
@@ -1296,19 +1310,24 @@ if (marcadorGeoVista) {
     imagen.alt = foto.descripcion || foto.nombre_archivo;
 
     descripcion.textContent =
-      "📷 Fotografía " + foto.orden + " de " +
-      fotosRecorrido.length + " · " +
-      (foto.descripcion || foto.nombre_archivo);
+      "📷 " + foto.calle.nombre +
+      " · Fotografía " + foto.orden +
+      " · " + (foto.descripcion || foto.nombre_archivo);
 
     flechaAnterior.disabled = indiceActual === 0;
-    flechaSiguiente.disabled = indiceActual === fotosRecorrido.length - 1;
+    flechaSiguiente.disabled =
+      indiceActual === fotosRecorrido.length - 1;
 
-    flechaAnterior.style.opacity = flechaAnterior.disabled ? "0.35" : "1";
-    flechaSiguiente.style.opacity = flechaSiguiente.disabled ? "0.35" : "1";
+    flechaAnterior.style.opacity =
+      flechaAnterior.disabled ? "0.35" : "1";
+
+    flechaSiguiente.style.opacity =
+      flechaSiguiente.disabled ? "0.35" : "1";
 
     estadoGeoVistaTexto(
       "Fotografía " + (indiceActual + 1) +
-      " de " + fotosRecorrido.length + " · Rumbia Street"
+      " de " + fotosRecorrido.length +
+      " · " + foto.calle.nombre
     );
   }
 
